@@ -77,6 +77,16 @@
             android:screenOrientation="portrait"
             android:exported="true">
         </activity>
-    </application>
+    <activity
+    android:name=".ImportLocalVoiceActivity"
+    android:exported="true"
+    android:label="Import Local Voice"
+    android:theme="@style/Theme.SherpaOnnxTtsEngine">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+</application>
 
 </manifest>

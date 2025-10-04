@@ -12,87 +12,89 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp">
 
-            <!-- Download sections expected by original code -->
+            <!-- Piper section -->
             <TextView
+                android:id="@+id/header_piper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/piper_models"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginBottom="6dp"/>
+                android:paddingBottom="8dp"/>
 
             <ListView
                 android:id="@+id/piperModelList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:dividerHeight="1dp"
-                android:layout_marginBottom="12dp"/>
+                android:divider="@android:color/darker_gray"
+                android:dividerHeight="0.5dp"
+                android:listSelector="@android:color/transparent"
+                android:paddingBottom="8dp"/>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Coqui section -->
             <TextView
+                android:id="@+id/header_coqui"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/coqui_models"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginBottom="6dp"/>
+                android:paddingBottom="8dp"/>
 
             <ListView
                 android:id="@+id/coquiModelList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:dividerHeight="1dp"
-                android:layout_marginBottom="12dp"/>
+                android:divider="@android:color/darker_gray"
+                android:dividerHeight="0.5dp"
+                android:listSelector="@android:color/transparent"
+                android:paddingBottom="8dp"/>
 
-            <!-- NEW: download size text used by Downloader.java -->
-            <TextView
-                android:id="@+id/downloadSize"
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:visibility="gone"
-                android:layout_marginBottom="12dp" />
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"/>
 
-            <!-- NEW: start button toggled by Downloader.java; calls ManageLanguagesActivity.startMain -->
-            <Button
-                android:id="@+id/buttonStart"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/start_main"
-                android:onClick="startMain"
-                android:visibility="gone"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Imported voices section -->
+            <!-- Imported section -->
             <TextView
                 android:id="@+id/imported_header"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
                 android:text="Imported voices (tap to activate, long-press to delete)"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textSize="16sp" />
+                android:paddingBottom="8dp"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/buttonImportLocal"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="6dp">
-
-                <Button
-                    android:id="@+id/buttonImportLocal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Import local voice" />
-            </LinearLayout>
+                android:text="Import local voice"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="10dp"
+                android:layout_marginBottom="12dp"/>
 
             <ListView
                 android:id="@+id/importedList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:dividerHeight="1dp" />
+                android:divider="@android:color/darker_gray"
+                android:dividerHeight="0.5dp"
+                android:listSelector="@android:color/transparent"/>
 
         </LinearLayout>
     </ScrollView>

@@ -37,8 +37,8 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         // keep existing download behavior wired through your adapters (not duplicated here)
         val piper = resources.getStringArray(R.array.piper_models).toMutableList()
         val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
-        binding?.piperModelList?.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, piper)
-        binding?.coquiModelList?.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, coqui)
+        binding?.piperModelList?.adapter = ArrayAdapter(this, R.layout.list_item, piper)
+        binding?.coquiModelList?.adapter = ArrayAdapter(this, R.layout.list_item, coqui)
     }
 
     private fun setupImportedVoicesSection() {
@@ -52,7 +52,7 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         val installed = db.allInstalledLanguages
         val labels = installed.map { "${it.lang}_${it.country}  •  ${it.name}" }
 
-        binding?.importedList?.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, labels)
+        binding?.importedList?.adapter = ArrayAdapter(this, R.layout.list_item, labels)
         binding?.importedList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
             PreferenceHelper(this).setCurrentLanguage(installed[pos].lang)
             Toast.makeText(this, "Active voice → ${installed[pos].lang}", Toast.LENGTH_SHORT).show()

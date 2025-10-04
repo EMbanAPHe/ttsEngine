@@ -127,4 +127,11 @@ public class LangDB extends SQLiteOpenHelper {
                 new String[]{language});
         db.close();
     }
+
+
+    public synchronized void deleteLanguage(String lang) {
+        android.database.sqlite.SQLiteDatabase database = this.getWritableDatabase();
+        database.delete(TABLE_NAME, COLUMN_LANG + " = ?", new String[]{lang});
+        database.close();
+    }
 }

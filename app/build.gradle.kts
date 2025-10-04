@@ -8,21 +8,19 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.embanaphe.sherpatts"   // unique fork ID
+        applicationId = "com.embanaphe.sherpatts.ui"
         minSdk = 29
         targetSdk = 35
-        versionCode = 10001
-        versionName = "local-fork-1"
+        versionCode = 10011
+        versionName = "local-import-ui-2"
 
-        vectorDrawables {
-            useSupportLibrary = true
-        }
+        vectorDrawables { useSupportLibrary = true }
+    }
 
-        buildFeatures {
-            viewBinding = true
-            buildConfig = true
-            compose = true
-        }
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+        compose = true
     }
 
     buildTypes {
@@ -32,29 +30,17 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            ndk {
-                abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
-            }
+            ndk { abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a")) }
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    lint {
-        disable += "MissingTranslation"
-    }
+    kotlinOptions { jvmTarget = "1.8" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }
+    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+    lint { disable += "MissingTranslation" }
 }
 
 dependencies {

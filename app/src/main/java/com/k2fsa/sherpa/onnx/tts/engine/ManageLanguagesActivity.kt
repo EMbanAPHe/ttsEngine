@@ -34,11 +34,16 @@ class ManageLanguagesActivity  : AppCompatActivity() {
     }
 
     private fun setupDownloadLists() {
-        // keep existing download behavior wired through your adapters (not duplicated here)
+        // Keep existing download behavior; only change the adapter ctor to point at the TextView inside list_item.xml
         val piper = resources.getStringArray(R.array.piper_models).toMutableList()
         val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
-        binding?.piperModelList?.adapter = ArrayAdapter(this, R.layout.list_item, piper)
-        binding?.coquiModelList?.adapter = ArrayAdapter(this, R.layout.list_item, coqui)
+
+        // IMPORTANT: Use the 3-arg ArrayAdapter so it binds to the TextView inside your row layout.
+        binding?.piperModelList?.adapter =
+            ArrayAdapter(this, R.layout.list_item, R.id.text_view, piper)
+
+        binding?.coquiModelList?.adapter =
+            ArrayAdapter(this, R.layout.list_item, R.id.text_view, coqui)
     }
 
     private fun setupImportedVoicesSection() {
@@ -52,7 +57,10 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         val installed = db.allInstalledLanguages
         val labels = installed.map { "${it.lang}_${it.country}  •  ${it.name}" }
 
-        binding?.importedList?.adapter = ArrayAdapter(this, R.layout.list_item, labels)
+        // IMPORTANT: Same fix here—use the 3-arg constructor with the TextView id from list_item.xml.
+        binding?.importedList?.adapter =
+            ArrayAdapter(this, R.layout.list_item, R.id.text_view, labels)
+
         binding?.importedList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
             PreferenceHelper(this).setCurrentLanguage(installed[pos].lang)
             Toast.makeText(this, "Active voice → ${installed[pos].lang}", Toast.LENGTH_SHORT).show()

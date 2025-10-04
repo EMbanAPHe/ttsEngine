@@ -14,9 +14,47 @@
             android:layout_height="wrap_content"
             android:padding="12dp">
 
-            <!-- Existing controls would be here; we include critical IDs used by Downloader.java -->
+            <!-- Section: Online model lists expected by ManageLanguagesActivity -->
+            <TextView
+                android:id="@+id/header_online_models"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Online models"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp" />
 
-            <!-- Download size indicator (expected by Downloader.java) -->
+            <!-- Piper model list (expected by code) -->
+            <TextView
+                android:id="@+id/label_piper"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/piper_models"
+                android:layout_marginTop="4dp" />
+
+            <ListView
+                android:id="@+id/piperModelList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:dividerHeight="1dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Coqui model list (expected by code) -->
+            <TextView
+                android:id="@+id/label_coqui"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/coqui_models"
+                android:layout_marginTop="4dp" />
+
+            <ListView
+                android:id="@+id/coquiModelList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:dividerHeight="1dp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Download size indicator used by Downloader.java -->
             <TextView
                 android:id="@+id/downloadSize"
                 android:layout_width="wrap_content"
@@ -26,7 +64,7 @@
                 android:layout_marginTop="8dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
-            <!-- Import local voice button you already use -->
+            <!-- Import local voice -->
             <Button
                 android:id="@+id/button_import_local"
                 android:layout_width="wrap_content"
@@ -34,7 +72,7 @@
                 android:text="Import local voice"
                 android:layout_marginTop="12dp" />
 
-            <!-- Imported voices list -->
+            <!-- Imported voices section -->
             <TextView
                 android:id="@+id/imported_header"
                 android:layout_width="match_parent"
@@ -50,7 +88,7 @@
                 android:layout_height="wrap_content"
                 android:dividerHeight="1dp" />
 
-            <!-- Button expected by Downloader.java; made GONE until downloads finish -->
+            <!-- Start button expected by Downloader.java -->
             <Button
                 android:id="@+id/buttonStart"
                 android:layout_width="wrap_content"

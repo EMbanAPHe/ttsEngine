@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -14,17 +15,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp">
 
-            <!-- Section: Online model lists expected by ManageLanguagesActivity -->
-            <TextView
-                android:id="@+id/header_online_models"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Online models"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginTop="8dp" />
-
-            <!-- Piper model list (expected by code) -->
+            <!-- Piper models -->
             <TextView
                 android:id="@+id/label_piper"
                 android:layout_width="wrap_content"
@@ -39,7 +30,7 @@
                 android:dividerHeight="1dp"
                 android:layout_marginBottom="8dp" />
 
-            <!-- Coqui model list (expected by code) -->
+            <!-- Coqui models -->
             <TextView
                 android:id="@+id/label_coqui"
                 android:layout_width="wrap_content"
@@ -66,7 +57,7 @@
 
             <!-- Import local voice -->
             <Button
-                android:id="@+id/button_import_local"
+                android:id="@+id/buttonImportLocal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Import local voice"
@@ -83,7 +74,7 @@
                 android:layout_marginTop="16dp" />
 
             <ListView
-                android:id="@+id/imported_list"
+                android:id="@+id/importedList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:dividerHeight="1dp" />

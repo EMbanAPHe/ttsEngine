@@ -4,12 +4,18 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/rounded_frame_thin"
-    android:paddingVertical="10dp">
-        <TextView
-            android:id="@+id/text_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:textColor="@color/primaryDark"
-            android:textSize="18sp" />
+    android:paddingVertical="10dp"
+    android:paddingHorizontal="12dp">
+
+    <TextView
+        android:id="@+id/text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:gravity="center_vertical"
+        android:textAppearance="?android:attr/textAppearanceListItem"
+        android:textColor="@color/primaryDark"
+        android:textSize="16sp"
+        android:paddingVertical="4dp" />
 </RelativeLayout>

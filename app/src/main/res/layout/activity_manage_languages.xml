@@ -14,7 +14,7 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- Download sections the original activity expects -->
+            <!-- Download sections expected by original code -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -43,9 +43,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:dividerHeight="1dp"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="12dp"/>
 
-            <!-- Imported voices section we added -->
+            <!-- NEW: download size text used by Downloader.java -->
+            <TextView
+                android:id="@+id/downloadSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:visibility="gone"
+                android:layout_marginBottom="12dp" />
+
+            <!-- NEW: start button toggled by Downloader.java; calls ManageLanguagesActivity.startMain -->
+            <Button
+                android:id="@+id/buttonStart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/start_main"
+                android:onClick="startMain"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Imported voices section -->
             <TextView
                 android:id="@+id/imported_header"
                 android:layout_width="match_parent"

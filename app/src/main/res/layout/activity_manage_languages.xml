@@ -4,39 +4,77 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="8dp">
+        android:layout_height="match_parent">
 
-        <!-- Existing sections (download lists) are assumed above -->
-
-        <!-- Imported voices section -->
-        <TextView
-            android:id="@+id/imported_header"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:text="Imported voices (tap to activate, long-press to delete)"
-            android:textStyle="bold"
-            android:textSize="16sp" />
+            android:orientation="vertical"
+            android:padding="12dp">
 
-        <Button
-            android:id="@+id/button_import_local"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="10dp"
-            android:text="Import local voice" />
+            <!-- Download sections the original activity expects -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/piper_models"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="6dp"/>
 
-        <ListView
-            android:id="@+id/imported_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="10dp"
-            android:dividerHeight="1dp" />
+            <ListView
+                android:id="@+id/piperModelList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:dividerHeight="1dp"
+                android:layout_marginBottom="12dp"/>
 
-        <!-- Adapters 'piperModelList' and 'coquiModelList' are expected elsewhere in this layout in your base file -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/coqui_models"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="6dp"/>
 
-    </LinearLayout>
+            <ListView
+                android:id="@+id/coquiModelList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:dividerHeight="1dp"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Imported voices section we added -->
+            <TextView
+                android:id="@+id/imported_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Imported voices (tap to activate, long-press to delete)"
+                android:textStyle="bold"
+                android:textSize="16sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="6dp">
+
+                <Button
+                    android:id="@+id/buttonImportLocal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Import local voice" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/importedList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:dividerHeight="1dp" />
+
+        </LinearLayout>
+    </ScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

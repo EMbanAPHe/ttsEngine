@@ -91,6 +91,7 @@ class LangDB private constructor(ctx: Context) {
 
     companion object {
         @Volatile private var instance: LangDB? = null
+        @JvmStatic
         fun getInstance(ctx: Context): LangDB {
             return instance ?: synchronized(this) {
                 instance ?: LangDB(ctx.applicationContext).also { instance = it }

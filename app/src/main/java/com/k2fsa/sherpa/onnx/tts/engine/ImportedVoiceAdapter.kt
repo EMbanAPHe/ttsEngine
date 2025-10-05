@@ -1,47 +1,25 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
 
-// We use a local row type instead of depending on LangDB's internal class to avoid duplicate/visibility issues.
-data class LangRow(
-    val name: String,
-    val lang: String,
-    val country: String
-)
-
+/**
+ * Displays a simple one-line row for imported voices.
+ * Accepts a list of display strings instead of a Lang object to reduce coupling.
+ */
 class ImportedVoiceAdapter(
-    private var items: List<LangRow>,
-    private val onClick: (LangRow) -> Unit,
-    private val onLongClick: (LangRow) -> Unit
-) : RecyclerView.Adapter<ImportedVoiceAdapter.VH>() {
+    context: Context,
+    items: List<String>
+) : ArrayAdapter<String>(context, R.layout.list_item, items) {
 
-    class VH(v: View) : RecyclerView.ViewHolder(v) {
-        val title: TextView = v.findViewById(R.id.title)
-        val subtitle: TextView = v.findViewById(R.id.subtitle)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_imported_voice, parent, false)
-        return VH(v)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = items[position]
-        holder.title.text = "${item.lang}_${item.country}"
-        holder.subtitle.text = item.name
-
-        holder.itemView.setOnClickListener { onClick(item) }
-        holder.itemView.setOnLongClickListener { onLongClick(item); true }
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    fun submitList(newItems: List<LangRow>) {
-        items = newItems
-        notifyDataSetChanged()
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val v = convertView ?: LayoutInflater.from(context).inflate(R.layout.list_item, parent, false)
+        val tv = v.findViewById<TextView>(R.id.text_view)
+        tv.text = getItem(position) ?: ""
+        return v
     }
 }

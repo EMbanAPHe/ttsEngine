@@ -1,6 +1,8 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.app.AlertDialog
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -10,11 +12,10 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
 import java.io.File
 
-class ManageLanguagesActivity  : AppCompatActivity() {
+class ManageLanguagesActivity : AppCompatActivity() {
     private var binding: ActivityManageLanguagesBinding? = null
 
     private val importFileLauncher = registerForActivityResult(
@@ -25,82 +26,87 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let { installFromTree(it) } }
 
-    private var selectedModelId: String? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
 
-        setupDownloadSpinners()
+        setupDownloadLists()
         setupImportedVoicesSection()
+        setupKokoroSpinner()
+        setupImportButtons()
+    }
 
-        binding!!.buttonImportLocal.setOnClickListener { importFileLauncher.launch(arrayOf("*/*")) }
-        binding!!.buttonImportLocal.setOnLongClickListener { importFolderLauncher.launch(null); true }
-
-        binding!!.buttonInstallModel.setOnClickListener {
-            val id = selectedModelId
-            if (id.isNullOrBlank()) {
-                Toast.makeText(this, R.string.select_a_model_first, Toast.LENGTH_SHORT).show()
-            } else {
-                try {
-                    Downloader.startDownload(this, id)
-                } catch (e: Throwable) {
-                    Toast.makeText(this, "Downloader error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            }
+    private fun setupImportButtons() {
+        binding?.buttonImportLocal?.setOnClickListener {
+            importFileLauncher.launch(arrayOf("*/*"))
+        }
+        binding?.buttonImportLocal?.setOnLongClickListener {
+            importFolderLauncher.launch(null); true
         }
     }
 
-    private fun setupDownloadSpinners() {
+    private fun setupDownloadLists() {
+        // Wire piper/coqui arrays from resources to simple lists
         val piper = resources.getStringArray(R.array.piper_models).toMutableList()
         val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
-        val kokoro = resources.getStringArray(R.array.kokoro_models).toMutableList()
-
-        binding!!.spinnerPiper.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, piper)
-        binding!!.spinnerCoqui.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, coqui)
-        binding!!.spinnerKokoro.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, kokoro)
-
-        val listener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedModelId = parent.getItemAtPosition(position)?.toString()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>) { /* no-op */ }
+        binding?.piperModelList?.adapter = ArrayAdapter(this, R.layout.list_item, piper)
+        binding?.coquiModelList?.adapter = ArrayAdapter(this, R.layout.list_item, coqui)
+        binding?.piperModelList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
+            Toast.makeText(this, "Selected Piper: ${'$'}{piper[pos]}", Toast.LENGTH_SHORT).show()
         }
-        binding!!.spinnerPiper.onItemSelectedListener = listener
-        binding!!.spinnerCoqui.onItemSelectedListener = listener
-        binding!!.spinnerKokoro.onItemSelectedListener = listener
+        binding?.coquiModelList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
+            Toast.makeText(this, "Selected Coqui: ${'$'}{coqui[pos]}", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    private fun setupImportedVoicesSection() {
-        binding!!.importedRecycler.layoutManager = LinearLayoutManager(this)
-        val adapter = ImportedVoiceAdapter(emptyList(),
-            onClick = { row ->
-                PreferenceHelper(this).setCurrentLanguage(row.lang)
-                Toast.makeText(this, getString(R.string.active_voice_fmt, row.lang), Toast.LENGTH_SHORT).show()
-            },
-            onLongClick = { row ->
-                AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.delete_voice_title_fmt, row.name))
-                    .setMessage(R.string.delete_voice_msg)
-                    .setPositiveButton(R.string.delete) { _, _ ->
-                        deleteVoice(row.lang, row.country)
-                        refreshImportedList()
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-                    .show()
+    private fun setupKokoroSpinner() {
+        val kokoroNames = resources.getStringArray(R.array.kokoro_models)
+        val kokoroUrls = resources.getStringArray(R.array.kokoro_model_urls)
+
+        val spinner = binding?.kokoroModels
+        spinner?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, kokoroNames.toList())
+        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                // no-op; use Install button
             }
-        )
-        binding!!.importedRecycler.adapter = adapter
-        refreshImportedList()
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        binding?.buttonInstall?.setOnClickListener {
+            val pos = spinner?.selectedItemPosition ?: 0
+            val url = kokoroUrls.getOrNull(pos)
+            val name = kokoroNames.getOrNull(pos)
+            if (url.isNullOrBlank() || name.isNullOrBlank()) {
+                Toast.makeText(this, "No Kokoro model selected", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            startDownload(url, name)
+        }
     }
 
     private fun refreshImportedList() {
         val db = LangDB.getInstance(this)
         val installed = db.allInstalledLanguages
-        val rows = installed.map { LangRow(it.name, it.lang, it.country) }
-        val adapter = binding!!.importedRecycler.adapter as ImportedVoiceAdapter
-        adapter.submitList(rows)
+        val labels = installed.map { "${'$'}{it.lang}_${'$'}{it.country}  •  ${'$'}{it.name}" }
+        binding?.importedList?.adapter = ImportedVoiceAdapter(this, labels)
+        binding?.importedList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
+            PreferenceHelper(this).setCurrentLanguage(installed[pos].lang)
+            Toast.makeText(this, "Active voice → ${'$'}{installed[pos].lang}", Toast.LENGTH_SHORT).show()
+        }
+        binding?.importedList?.onItemLongClickListener = AdapterView.OnItemLongClickListener { _, _, pos, _ ->
+            val entry = installed[pos]
+            AlertDialog.Builder(this)
+                .setTitle("Delete ${'$'}{entry.name}?")
+                .setMessage("Remove this voice and its files?")
+                .setPositiveButton("Delete") { _, _ ->
+                    deleteVoice(entry.lang, entry.country)
+                    refreshImportedList()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            true
+        }
     }
 
     private fun deleteVoice(lang: String, country: String) {
@@ -130,21 +136,32 @@ class ManageLanguagesActivity  : AppCompatActivity() {
                 db.addLanguage(r.modelName, r.lang, r.country, 0, 1.0f, 1.0f, r.modelType)
             }
             PreferenceHelper(this).setCurrentLanguage(r.lang)
-            Toast.makeText(this, "Imported ${r.modelName} (${r.lang}_${r.country})", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Imported ${'$'}{r.modelName} (${ '$'}{r.lang}_${ '$'}{r.country})", Toast.LENGTH_LONG).show()
             refreshImportedList()
         }.onFailure { e ->
-            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Import failed: ${'$'}{e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
-    fun startMain(view: View) {
+    private fun startDownload(url: String, modelName: String) {
+        try {
+            val req = DownloadManager.Request(Uri.parse(url))
+                .setAllowedOverMetered(true)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setTitle("Downloading ${'$'}modelName")
+                .setDestinationInExternalFilesDir(this, null, "kokoro/${'$'}modelName.tar");
+            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            dm.enqueue(req)
+            Toast.makeText(this, "Started download: ${'$'}modelName", Toast.LENGTH_LONG).show()
+        } catch (t: Throwable) {
+            Toast.makeText(this, "Download failed: ${'$'}{t.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun startMain(@Suppress("UNUSED_PARAMETER") view: View) {
         val intent = Intent(this, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
         finishAffinity()
-    }
-
-    fun testVoices(view: View) {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/spaces/k2-fsa/text-to-speech/")))
     }
 }

@@ -5,17 +5,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
+import java.io.File
 
-class ManageLanguagesActivity : AppCompatActivity() {
+class ManageLanguagesActivity  : AppCompatActivity() {
     private var binding: ActivityManageLanguagesBinding? = null
-    private var selectedModelId: String? = null
-    private lateinit var importedAdapter: ImportedVoiceAdapter
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -25,88 +25,88 @@ class ManageLanguagesActivity : AppCompatActivity() {
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let { installFromTree(it) } }
 
+    private var selectedModelId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
 
-        setupModelSpinners()
+        setupDownloadSpinners()
         setupImportedVoicesSection()
 
-        binding?.buttonInstallModel?.setOnClickListener {
+        binding!!.buttonImportLocal.setOnClickListener { importFileLauncher.launch(arrayOf("*/*")) }
+        binding!!.buttonImportLocal.setOnLongClickListener { importFolderLauncher.launch(null); true }
+
+        binding!!.buttonInstallModel.setOnClickListener {
             val id = selectedModelId
-            if (id.isNullOrEmpty()) {
-                Toast.makeText(this, "Pick a model first", Toast.LENGTH_SHORT).show()
+            if (id.isNullOrBlank()) {
+                Toast.makeText(this, R.string.select_a_model_first, Toast.LENGTH_SHORT).show()
             } else {
-                Downloader.startDownload(this, id)
+                try {
+                    Downloader.startDownload(this, id)
+                } catch (e: Throwable) {
+                    Toast.makeText(this, "Downloader error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
-        binding?.button_import_local?.setOnClickListener { importFileLauncher.launch(arrayOf("*/*")) }
-        binding?.button_import_local?.setOnLongClickListener { importFolderLauncher.launch(null); true }
     }
 
-    private fun setupModelSpinners() {
-        // Piper
+    private fun setupDownloadSpinners() {
         val piper = resources.getStringArray(R.array.piper_models).toMutableList()
-        binding?.spinnerPiper?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, piper)
-        binding?.spinnerPiper?.setOnItemSelectedListenerCompat { pos ->
-            selectedModelId = piper[pos]
-        }
-
-        // Coqui
         val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
-        binding?.spinnerCoqui?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, coqui)
-        binding?.spinnerCoqui?.setOnItemSelectedListenerCompat { pos ->
-            selectedModelId = coqui[pos]
-        }
-
-        // Kokoro
         val kokoro = resources.getStringArray(R.array.kokoro_models).toMutableList()
-        binding?.spinnerKokoro?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, kokoro)
-        binding?.spinnerKokoro?.setOnItemSelectedListenerCompat { pos ->
-            selectedModelId = kokoro[pos]
+
+        binding!!.spinnerPiper.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, piper)
+        binding!!.spinnerCoqui.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, coqui)
+        binding!!.spinnerKokoro.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, kokoro)
+
+        val listener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                selectedModelId = parent.getItemAtPosition(position)?.toString()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) { /* no-op */ }
         }
+        binding!!.spinnerPiper.onItemSelectedListener = listener
+        binding!!.spinnerCoqui.onItemSelectedListener = listener
+        binding!!.spinnerKokoro.onItemSelectedListener = listener
     }
 
     private fun setupImportedVoicesSection() {
-        importedAdapter = ImportedVoiceAdapter(emptyList(),
-            onClick = { entry ->
-                PreferenceHelper(this).setCurrentLanguage(entry.lang)
-                Toast.makeText(this, "Active voice → ${entry.lang}", Toast.LENGTH_SHORT).show()
+        binding!!.importedRecycler.layoutManager = LinearLayoutManager(this)
+        val adapter = ImportedVoiceAdapter(emptyList(),
+            onClick = { row ->
+                PreferenceHelper(this).setCurrentLanguage(row.lang)
+                Toast.makeText(this, getString(R.string.active_voice_fmt, row.lang), Toast.LENGTH_SHORT).show()
             },
-            onLongClick = { entry ->
+            onLongClick = { row ->
                 AlertDialog.Builder(this)
-                    .setTitle("Delete ${entry.name}?")
-                    .setMessage("Remove this voice and its files?")
-                    .setPositiveButton("Delete") { _, _ ->
-                        deleteVoice(entry.lang, entry.country)
+                    .setTitle(getString(R.string.delete_voice_title_fmt, row.name))
+                    .setMessage(R.string.delete_voice_msg)
+                    .setPositiveButton(R.string.delete) { _, _ ->
+                        deleteVoice(row.lang, row.country)
                         refreshImportedList()
                     }
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton(R.string.cancel, null)
                     .show()
-            })
-
-        binding?.recyclerImported?.apply {
-            layoutManager = LinearLayoutManager(this@ManageLanguagesActivity)
-            adapter = importedAdapter
-            isNestedScrollingEnabled = false
-        }
-
+            }
+        )
+        binding!!.importedRecycler.adapter = adapter
         refreshImportedList()
     }
 
     private fun refreshImportedList() {
         val db = LangDB.getInstance(this)
-        importedAdapter.submit(db.allInstalledLanguages)
+        val installed = db.allInstalledLanguages
+        val rows = installed.map { LangRow(it.name, it.lang, it.country) }
+        val adapter = binding!!.importedRecycler.adapter as ImportedVoiceAdapter
+        adapter.submitList(rows)
     }
 
     private fun deleteVoice(lang: String, country: String) {
-        // remove folder
-        val dir = getExternalFilesDir(null)
-        java.io.File(dir, lang + country).deleteRecursively()
-        // remove DB row
+        File(getExternalFilesDir(null), lang + country).deleteRecursively()
         val db = LangDB.getInstance(this)
-        try { db.deleteLanguage(lang) } catch (_: Throwable) {}
+        try { db.deleteLanguage(lang) } catch (_: Throwable) { }
         if (PreferenceHelper(this).getCurrentLanguage() == lang) {
             PreferenceHelper(this).setCurrentLanguage("")
         }
@@ -146,18 +146,5 @@ class ManageLanguagesActivity : AppCompatActivity() {
 
     fun testVoices(view: View) {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/spaces/k2-fsa/text-to-speech/")))
-    }
-}
-
-// Small helper to make Spinner selection listener concise
-import android.widget.AdapterView
-import android.widget.Spinner
-
-private fun Spinner.setOnItemSelectedListenerCompat(onSelected: (pos: Int) -> Unit) {
-    this.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-            onSelected(position)
-        }
-        override fun onNothingSelected(parent: AdapterView<*>) {}
     }
 }

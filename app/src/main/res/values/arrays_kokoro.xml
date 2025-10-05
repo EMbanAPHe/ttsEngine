@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Add/adjust these IDs to match your Downloader's expected identifiers -->
+    <string-array name="kokoro_models">
+        <item>kokoro-en-v0_19</item>
+        <item>kokoro-en-v1_0</item>
+        <item>kokoro-en-lite</item>
+    </string-array>
+</resources>

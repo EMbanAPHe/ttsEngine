@@ -1,6 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="kokoro_models">Kokoro models</string>
-    <string name="install">Install</string>
+    <string name="install_selected_model">Install selected model</string>
     <string name="import_local_voice">Import local voice</string>
-    <string name="imported_voices_header">Imported voices (tap to activate, long-press to delete)</string>
+    <string name="imported_list_header">Imported voices (tap to activate, long-press to delete)</string>
+    <string name="active_voice_fmt">Active voice → %1$s</string>
+    <string name="delete_voice_title_fmt">Delete %1$s?</string>
+    <string name="delete_voice_msg">Remove this voice and its files?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="select_a_model_first">Select a model first</string>
 </resources>

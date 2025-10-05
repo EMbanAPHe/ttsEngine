@@ -5,32 +5,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
-import kotlinx.coroutines.launch
-import java.io.File
 
-class ManageLanguagesActivity  : AppCompatActivity() {
+class ManageLanguagesActivity : AppCompatActivity() {
     private var binding: ActivityManageLanguagesBinding? = null
-
-    // Kokoro mirrors
-    private val KOKORO_URLS_INT8 = listOf(
-        "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19-int8.tar.bz2?download=true",
-        "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19-int8.tar.bz2?download=true"
-    )
-    private val KOKORO_URLS_FP16 = listOf(
-        "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19-fp16.tar.bz2?download=true",
-        "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19-fp16.tar.bz2?download=true"
-    )
-    private val KOKORO_URLS_FP32 = listOf(
-        "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19.tar.bz2?download=true",
-        "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19.tar.bz2?download=true"
-    )
+    private var selectedModelId: String? = null
+    private lateinit var importedAdapter: ImportedVoiceAdapter
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -45,73 +30,83 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
 
-        setupDownloadLists()
+        setupModelSpinners()
         setupImportedVoicesSection()
 
-        // Kokoro spinner + install wiring
-        binding?.spinnerKokoroQuality?.adapter =
-            ArrayAdapter(this, R.layout.list_item, R.id.text_view, resources.getStringArray(R.array.kokoro_quality_labels).toList())
-
-        binding?.buttonInstallKokoro?.setOnClickListener {
-            val pos = binding?.spinnerKokoroQuality?.selectedItemPosition ?: 0
-            val (urls, displayName) = when (pos) {
-                0 -> KOKORO_URLS_INT8 to "Kokoro-en v0_19 (int8)"
-                1 -> KOKORO_URLS_FP16 to "Kokoro-en v0_19 (fp16)"
-                else -> KOKORO_URLS_FP32 to "Kokoro-en v0_19 (fp32)"
+        binding?.buttonInstallModel?.setOnClickListener {
+            val id = selectedModelId
+            if (id.isNullOrEmpty()) {
+                Toast.makeText(this, "Pick a model first", Toast.LENGTH_SHORT).show()
+            } else {
+                Downloader.startDownload(this, id)
             }
-            installKokoro(urls, displayName)
+        }
+        binding?.button_import_local?.setOnClickListener { importFileLauncher.launch(arrayOf("*/*")) }
+        binding?.button_import_local?.setOnLongClickListener { importFolderLauncher.launch(null); true }
+    }
+
+    private fun setupModelSpinners() {
+        // Piper
+        val piper = resources.getStringArray(R.array.piper_models).toMutableList()
+        binding?.spinnerPiper?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, piper)
+        binding?.spinnerPiper?.setOnItemSelectedListenerCompat { pos ->
+            selectedModelId = piper[pos]
+        }
+
+        // Coqui
+        val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
+        binding?.spinnerCoqui?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, coqui)
+        binding?.spinnerCoqui?.setOnItemSelectedListenerCompat { pos ->
+            selectedModelId = coqui[pos]
+        }
+
+        // Kokoro
+        val kokoro = resources.getStringArray(R.array.kokoro_models).toMutableList()
+        binding?.spinnerKokoro?.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, kokoro)
+        binding?.spinnerKokoro?.setOnItemSelectedListenerCompat { pos ->
+            selectedModelId = kokoro[pos]
         }
     }
 
-    private fun setupDownloadLists() {
-        val piper = resources.getStringArray(R.array.piper_models).toMutableList()
-        val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
-
-        binding?.piperModelList?.adapter =
-            ArrayAdapter(this, R.layout.list_item, R.id.text_view, piper)
-
-        binding?.coquiModelList?.adapter =
-            ArrayAdapter(this, R.layout.list_item, R.id.text_view, coqui)
-    }
-
     private fun setupImportedVoicesSection() {
-        binding?.buttonImportLocal?.setOnClickListener { importFileLauncher.launch(arrayOf("*/*")) }
-        binding?.buttonImportLocal?.setOnLongClickListener { importFolderLauncher.launch(null); true }
+        importedAdapter = ImportedVoiceAdapter(emptyList(),
+            onClick = { entry ->
+                PreferenceHelper(this).setCurrentLanguage(entry.lang)
+                Toast.makeText(this, "Active voice → ${entry.lang}", Toast.LENGTH_SHORT).show()
+            },
+            onLongClick = { entry ->
+                AlertDialog.Builder(this)
+                    .setTitle("Delete ${entry.name}?")
+                    .setMessage("Remove this voice and its files?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        deleteVoice(entry.lang, entry.country)
+                        refreshImportedList()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            })
+
+        binding?.recyclerImported?.apply {
+            layoutManager = LinearLayoutManager(this@ManageLanguagesActivity)
+            adapter = importedAdapter
+            isNestedScrollingEnabled = false
+        }
+
         refreshImportedList()
     }
 
     private fun refreshImportedList() {
         val db = LangDB.getInstance(this)
-        val installed = db.allInstalledLanguages
-        val labels = installed.map { "${it.lang}_${it.country} • ${it.name}" }
-
-        binding?.importedList?.adapter = ArrayAdapter(this, R.layout.list_item, R.id.text_view, labels)
-        binding?.importedList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
-            val entry = installed[pos]
-            PreferenceHelper(this).setCurrentLanguage(entry.lang)
-            Toast.makeText(this, "Active voice → ${entry.lang}", Toast.LENGTH_SHORT).show()
-        }
-        binding?.importedList?.onItemLongClickListener = AdapterView.OnItemLongClickListener { _, _, pos, _ ->
-            val entry = installed[pos]
-            AlertDialog.Builder(this)
-                .setTitle("Delete ${entry.name}?")
-                .setMessage("Remove this voice and its files?")
-                .setPositiveButton("Delete") { _, _ ->
-                    deleteVoice(entry.lang, entry.country)
-                    refreshImportedList()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-            true
-        }
+        importedAdapter.submit(db.allInstalledLanguages)
     }
 
     private fun deleteVoice(lang: String, country: String) {
-        // remove folder (best-effort)
-        File(getExternalFilesDir(null), lang + country).deleteRecursively()
-        // Update DB
+        // remove folder
+        val dir = getExternalFilesDir(null)
+        java.io.File(dir, lang + country).deleteRecursively()
+        // remove DB row
         val db = LangDB.getInstance(this)
-        db.deleteLanguage(lang)
+        try { db.deleteLanguage(lang) } catch (_: Throwable) {}
         if (PreferenceHelper(this).getCurrentLanguage() == lang) {
             PreferenceHelper(this).setCurrentLanguage("")
         }
@@ -132,43 +127,13 @@ class ManageLanguagesActivity  : AppCompatActivity() {
             val db = LangDB.getInstance(this)
             val existing = db.allInstalledLanguages.firstOrNull { it.lang == r.lang }
             if (existing == null) {
-                // Infer model type from files the LocalModelInstaller detected (coqui/piper)
-                val modelType = if (r.modelName.lowercase().contains("kokoro")) "kokoro"
-                                else if (r.modelName.lowercase().contains("piper")) "piper"
-                                else "coqui"
-                db.addLanguage(r.modelName, r.lang, r.country, 0, 1.0f, 1.0f, modelType)
+                db.addLanguage(r.modelName, r.lang, r.country, 0, 1.0f, 1.0f, r.modelType)
             }
             PreferenceHelper(this).setCurrentLanguage(r.lang)
             Toast.makeText(this, "Imported ${r.modelName} (${r.lang}_${r.country})", Toast.LENGTH_LONG).show()
             refreshImportedList()
         }.onFailure { e ->
             Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun installKokoro(urls: List<String>, displayName: String) {
-        binding?.textKokoroStatus?.text = "Downloading $displayName..."
-        lifecycleScope.launch {
-            try {
-                val archive = KokoroInstaller.downloadFirstAvailable(this@ManageLanguagesActivity, urls)
-                binding?.textKokoroStatus?.text = "Extracting ${archive.name}..."
-                val outDir = KokoroInstaller.extractToModelsDir(this@ManageLanguagesActivity, archive)
-                if (!KokoroInstaller.looksLikeKokoro(outDir)) {
-                    binding?.textKokoroStatus?.text = "Extracted, but not a Kokoro pack."
-                    return@launch
-                }
-                val db = LangDB.getInstance(this@ManageLanguagesActivity)
-                val modelName = outDir.name // e.g. kokoro-en-v0_19
-                val exists = db.allInstalledLanguages.any { it.lang == modelName }
-                if (!exists) {
-                    db.addLanguage(displayName, "en", "US", 0, 1.0f, 1.0f, "kokoro")
-                }
-                PreferenceHelper(this@ManageLanguagesActivity).setCurrentLanguage(modelName)
-                binding?.textKokoroStatus?.text = "Installed: $displayName"
-                refreshImportedList()
-            } catch (e: Exception) {
-                binding?.textKokoroStatus?.text = "Kokoro install failed: ${e.message}"
-            }
         }
     }
 
@@ -179,7 +144,20 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         finishAffinity()
     }
 
-    fun testVoices(@Suppress("UNUSED_PARAMETER") view: View) {
+    fun testVoices(view: View) {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/spaces/k2-fsa/text-to-speech/")))
+    }
+}
+
+// Small helper to make Spinner selection listener concise
+import android.widget.AdapterView
+import android.widget.Spinner
+
+private fun Spinner.setOnItemSelectedListenerCompat(onSelected: (pos: Int) -> Unit) {
+    this.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+            onSelected(position)
+        }
+        override fun onNothingSelected(parent: AdapterView<*>) {}
     }
 }

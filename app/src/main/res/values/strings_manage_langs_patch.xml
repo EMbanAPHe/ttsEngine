@@ -1,0 +1,6 @@
+<resources>
+    <string name="kokoro_models">Kokoro models</string>
+    <string name="install">Install</string>
+    <string name="import_local_voice">Import local voice</string>
+    <string name="imported_voices_header">Imported voices (tap to activate, long-press to delete)</string>
+</resources>

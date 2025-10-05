@@ -11,14 +11,14 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
+import kotlinx.coroutines.launch
 import java.io.File
 
 class ManageLanguagesActivity  : AppCompatActivity() {
-    // Candidate URLs for Kokoro model packs. The installer tries each in order until one works.
-    // Replace/update if any mirror changes. Must point to .zip or .tar.bz2 archives that contain:
-    // model.onnx, tokens.txt, voices.bin (or voices/), espeak-ng-data/
+    private var binding: ActivityManageLanguagesBinding? = null
+
+    // Kokoro mirrors
     private val KOKORO_URLS_INT8 = listOf(
         "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19-int8.tar.bz2?download=true",
         "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19-int8.tar.bz2?download=true"
@@ -31,8 +31,6 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19.tar.bz2?download=true",
         "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19.tar.bz2?download=true"
     )
-
-    private var binding: ActivityManageLanguagesBinding? = null
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -49,6 +47,7 @@ class ManageLanguagesActivity  : AppCompatActivity() {
 
         setupDownloadLists()
         setupImportedVoicesSection()
+
         // Kokoro spinner + install wiring
         binding?.spinnerKokoroQuality?.adapter =
             ArrayAdapter(this, R.layout.list_item, R.id.text_view, resources.getStringArray(R.array.kokoro_quality_labels).toList())
@@ -60,16 +59,14 @@ class ManageLanguagesActivity  : AppCompatActivity() {
                 1 -> KOKORO_URLS_FP16 to "Kokoro-en v0_19 (fp16)"
                 else -> KOKORO_URLS_FP32 to "Kokoro-en v0_19 (fp32)"
             }
-            installKokoro(listOf(url), displayName)
+            installKokoro(urls, displayName)
         }
     }
 
     private fun setupDownloadLists() {
-        // Keep existing download behavior; only change the adapter ctor to point at the TextView inside list_item.xml
         val piper = resources.getStringArray(R.array.piper_models).toMutableList()
         val coqui = resources.getStringArray(R.array.coqui_models).toMutableList()
 
-        // IMPORTANT: Use the 3-arg ArrayAdapter so it binds to the TextView inside your row layout.
         binding?.piperModelList?.adapter =
             ArrayAdapter(this, R.layout.list_item, R.id.text_view, piper)
 
@@ -86,15 +83,13 @@ class ManageLanguagesActivity  : AppCompatActivity() {
     private fun refreshImportedList() {
         val db = LangDB.getInstance(this)
         val installed = db.allInstalledLanguages
-        val labels = installed.map { "${it.lang}_${it.country}  •  ${it.name}" }
+        val labels = installed.map { "${it.lang}_${it.country} • ${it.name}" }
 
-        // IMPORTANT: Same fix here—use the 3-arg constructor with the TextView id from list_item.xml.
-        binding?.importedList?.adapter =
-            ArrayAdapter(this, R.layout.list_item, R.id.text_view, labels)
-
+        binding?.importedList?.adapter = ArrayAdapter(this, R.layout.list_item, R.id.text_view, labels)
         binding?.importedList?.onItemClickListener = AdapterView.OnItemClickListener { _, _, pos, _ ->
-            PreferenceHelper(this).setCurrentLanguage(installed[pos].lang)
-            Toast.makeText(this, "Active voice → ${installed[pos].lang}", Toast.LENGTH_SHORT).show()
+            val entry = installed[pos]
+            PreferenceHelper(this).setCurrentLanguage(entry.lang)
+            Toast.makeText(this, "Active voice → ${entry.lang}", Toast.LENGTH_SHORT).show()
         }
         binding?.importedList?.onItemLongClickListener = AdapterView.OnItemLongClickListener { _, _, pos, _ ->
             val entry = installed[pos]
@@ -112,11 +107,11 @@ class ManageLanguagesActivity  : AppCompatActivity() {
     }
 
     private fun deleteVoice(lang: String, country: String) {
-        // remove folder
+        // remove folder (best-effort)
         File(getExternalFilesDir(null), lang + country).deleteRecursively()
-        // remove DB row
+        // Update DB
         val db = LangDB.getInstance(this)
-        try { db.deleteLanguage(lang) } catch (_: Throwable) { /* ignore if method absent */ }
+        db.deleteLanguage(lang)
         if (PreferenceHelper(this).getCurrentLanguage() == lang) {
             PreferenceHelper(this).setCurrentLanguage("")
         }
@@ -124,12 +119,12 @@ class ManageLanguagesActivity  : AppCompatActivity() {
 
     private fun installFromUri(uri: Uri) {
         val res = LocalModelInstaller.installFromUri(this, uri)
-        handleImportResult(res)
+        handleImportResult(Result.success(res))
     }
 
     private fun installFromTree(uri: Uri) {
         val res = LocalModelInstaller.installFromTree(this, uri)
-        handleImportResult(res)
+        handleImportResult(Result.success(res))
     }
 
     private fun handleImportResult(res: Result<LocalModelInstaller.ImportResult>) {
@@ -137,7 +132,11 @@ class ManageLanguagesActivity  : AppCompatActivity() {
             val db = LangDB.getInstance(this)
             val existing = db.allInstalledLanguages.firstOrNull { it.lang == r.lang }
             if (existing == null) {
-                db.addLanguage(r.modelName, r.lang, r.country, 0, 1.0f, 1.0f, r.modelType)
+                // Infer model type from files the LocalModelInstaller detected (coqui/piper)
+                val modelType = if (r.modelName.lowercase().contains("kokoro")) "kokoro"
+                                else if (r.modelName.lowercase().contains("piper")) "piper"
+                                else "coqui"
+                db.addLanguage(r.modelName, r.lang, r.country, 0, 1.0f, 1.0f, modelType)
             }
             PreferenceHelper(this).setCurrentLanguage(r.lang)
             Toast.makeText(this, "Imported ${r.modelName} (${r.lang}_${r.country})", Toast.LENGTH_LONG).show()
@@ -159,7 +158,7 @@ class ManageLanguagesActivity  : AppCompatActivity() {
                     return@launch
                 }
                 val db = LangDB.getInstance(this@ManageLanguagesActivity)
-                val modelName = outDir.name
+                val modelName = outDir.name // e.g. kokoro-en-v0_19
                 val exists = db.allInstalledLanguages.any { it.lang == modelName }
                 if (!exists) {
                     db.addLanguage(displayName, "en", "US", 0, 1.0f, 1.0f, "kokoro")
@@ -180,7 +179,7 @@ class ManageLanguagesActivity  : AppCompatActivity() {
         finishAffinity()
     }
 
-    fun testVoices(view: View) {
+    fun testVoices(@Suppress("UNUSED_PARAMETER") view: View) {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/spaces/k2-fsa/text-to-speech/")))
     }
 }

@@ -17,6 +17,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp">
 
+            <!-- Piper models -->
             <TextView
                 android:id="@+id/label_piper"
                 android:layout_width="wrap_content"
@@ -31,6 +32,7 @@
                 android:dividerHeight="1dp"
                 android:layout_marginBottom="8dp" />
 
+            <!-- Coqui models -->
             <TextView
                 android:id="@+id/label_coqui"
                 android:layout_width="wrap_content"
@@ -45,6 +47,7 @@
                 android:dividerHeight="1dp"
                 android:layout_marginBottom="12dp" />
 
+            <!-- Download size indicator -->
             <TextView
                 android:id="@+id/downloadSize"
                 android:layout_width="wrap_content"
@@ -54,6 +57,7 @@
                 android:layout_marginTop="8dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
+            <!-- Import local voice -->
             <Button
                 android:id="@+id/buttonImportLocal"
                 android:layout_width="wrap_content"
@@ -61,6 +65,7 @@
                 android:text="Import local voice"
                 android:layout_marginTop="12dp" />
 
+            <!-- Kokoro section -->
             <TextView
                 android:id="@+id/label_kokoro"
                 android:layout_width="wrap_content"
@@ -91,6 +96,7 @@
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:layout_marginTop="4dp" />
 
+            <!-- Imported voices -->
             <TextView
                 android:id="@+id/imported_header"
                 android:layout_width="match_parent"
@@ -106,6 +112,7 @@
                 android:layout_height="wrap_content"
                 android:dividerHeight="1dp" />
 
+            <!-- Start button -->
             <Button
                 android:id="@+id/buttonStart"
                 android:layout_width="wrap_content"

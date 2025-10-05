@@ -2,6 +2,8 @@
 
 package com.k2fsa.sherpa.onnx.tts.engine
 
+import com.k2fsa.sherpa.onnx.tts.engine.BuildConfig
+
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFormat

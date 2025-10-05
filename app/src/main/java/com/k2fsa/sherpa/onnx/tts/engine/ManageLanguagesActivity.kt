@@ -119,12 +119,12 @@ class ManageLanguagesActivity  : AppCompatActivity() {
 
     private fun installFromUri(uri: Uri) {
         val res = LocalModelInstaller.installFromUri(this, uri)
-        handleImportResult(Result.success(res))
+        handleImportResult(res)
     }
 
     private fun installFromTree(uri: Uri) {
         val res = LocalModelInstaller.installFromTree(this, uri)
-        handleImportResult(Result.success(res))
+        handleImportResult(res)
     }
 
     private fun handleImportResult(res: Result<LocalModelInstaller.ImportResult>) {

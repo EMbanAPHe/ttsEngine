@@ -343,7 +343,7 @@ class MainActivity : ComponentActivity() {
                                                             selectedSpeaker.value = speakerId
                                                             TtsEngine.speakerId.value = speakerId
                                                             langDB.updateLang(
-                                                                TtsEngine.lang,
+                                                                TtsEngine.lang.orEmpty(),
                                                                 TtsEngine.speakerId.value,
                                                                 TtsEngine.speed.value,
                                                                 TtsEngine.volume.value

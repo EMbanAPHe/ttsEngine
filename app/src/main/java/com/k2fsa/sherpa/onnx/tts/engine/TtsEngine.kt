@@ -62,7 +62,7 @@ object TtsEngine {
         this.lang = language
         this.country = currentLanguage.country
         this.speed.value = currentLanguage.speed
-        this.speakerId.value = currentLanguage.sid
+        this.speakerId.value = currentLanguage.speakerId
         this.volume.value = currentLanguage.volume
         PreferenceHelper(context).setCurrentLanguage(language)
     }

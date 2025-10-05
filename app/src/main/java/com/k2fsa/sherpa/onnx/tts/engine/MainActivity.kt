@@ -197,7 +197,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onValueChangeFinished = {
                                         langDB.updateLang(
-                                            TtsEngine.lang,
+                                            TtsEngine.lang.orEmpty(),
                                             TtsEngine.speakerId.value,
                                             TtsEngine.speed.value,
                                             TtsEngine.volume.value
@@ -429,7 +429,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onValueChangeFinished = {
                                         langDB.updateLang(
-                                            TtsEngine.lang,
+                                            TtsEngine.lang.orEmpty(),
                                             TtsEngine.speakerId.value,
                                             TtsEngine.speed.value,
                                             TtsEngine.volume.value

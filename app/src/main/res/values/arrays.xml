@@ -194,4 +194,11 @@
         <item>sv-cv</item>
         <item>uk-mai</item>
     </string-array>
+
+    <string-array name="kokoro_quality_labels">
+        <item>Tiny (int8) — fastest</item>
+        <item>Medium (fp16) — balanced</item>
+        <item>Full (fp32) — highest quality</item>
+    </string-array>
+
 </resources>

@@ -7,7 +7,9 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true">
 
         <LinearLayout
             android:orientation="vertical"
@@ -15,7 +17,6 @@
             android:layout_height="wrap_content"
             android:padding="12dp">
 
-            <!-- Piper models -->
             <TextView
                 android:id="@+id/label_piper"
                 android:layout_width="wrap_content"
@@ -30,7 +31,6 @@
                 android:dividerHeight="1dp"
                 android:layout_marginBottom="8dp" />
 
-            <!-- Coqui models -->
             <TextView
                 android:id="@+id/label_coqui"
                 android:layout_width="wrap_content"
@@ -45,7 +45,6 @@
                 android:dividerHeight="1dp"
                 android:layout_marginBottom="12dp" />
 
-            <!-- Download size indicator used by Downloader.java -->
             <TextView
                 android:id="@+id/downloadSize"
                 android:layout_width="wrap_content"
@@ -55,7 +54,6 @@
                 android:layout_marginTop="8dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
-            <!-- Import local voice -->
             <Button
                 android:id="@+id/buttonImportLocal"
                 android:layout_width="wrap_content"
@@ -63,7 +61,36 @@
                 android:text="Import local voice"
                 android:layout_marginTop="12dp" />
 
-            <!-- Imported voices section -->
+            <TextView
+                android:id="@+id/label_kokoro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kokoro (female styles available)"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp" />
+
+            <Spinner
+                android:id="@+id/spinnerKokoroQuality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:spinnerMode="dropdown"
+                android:layout_marginTop="8dp" />
+
+            <Button
+                android:id="@+id/buttonInstallKokoro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Install Kokoro"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:id="@+id/textKokoroStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:layout_marginTop="4dp" />
+
             <TextView
                 android:id="@+id/imported_header"
                 android:layout_width="match_parent"
@@ -79,7 +106,6 @@
                 android:layout_height="wrap_content"
                 android:dividerHeight="1dp" />
 
-            <!-- Start button expected by Downloader.java -->
             <Button
                 android:id="@+id/buttonStart"
                 android:layout_width="wrap_content"

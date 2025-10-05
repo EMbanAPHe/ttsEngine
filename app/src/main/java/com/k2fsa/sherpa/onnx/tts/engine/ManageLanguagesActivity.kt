@@ -10,10 +10,28 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
 import java.io.File
 
 class ManageLanguagesActivity  : AppCompatActivity() {
+    // Candidate URLs for Kokoro model packs. The installer tries each in order until one works.
+    // Replace/update if any mirror changes. Must point to .zip or .tar.bz2 archives that contain:
+    // model.onnx, tokens.txt, voices.bin (or voices/), espeak-ng-data/
+    private val KOKORO_URLS_INT8 = listOf(
+        "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19-int8.tar.bz2?download=true",
+        "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19-int8.tar.bz2?download=true"
+    )
+    private val KOKORO_URLS_FP16 = listOf(
+        "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19-fp16.tar.bz2?download=true",
+        "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19-fp16.tar.bz2?download=true"
+    )
+    private val KOKORO_URLS_FP32 = listOf(
+        "https://huggingface.co/csukuangfj/kokoro-en-v0_19/resolve/main/kokoro-en-v0_19.tar.bz2?download=true",
+        "https://huggingface.co/k2-fsa/sherpa-onnx/resolve/main/kokoro/kokoro-en-v0_19.tar.bz2?download=true"
+    )
+
     private var binding: ActivityManageLanguagesBinding? = null
 
     private val importFileLauncher = registerForActivityResult(
@@ -31,6 +49,19 @@ class ManageLanguagesActivity  : AppCompatActivity() {
 
         setupDownloadLists()
         setupImportedVoicesSection()
+        // Kokoro spinner + install wiring
+        binding?.spinnerKokoroQuality?.adapter =
+            ArrayAdapter(this, R.layout.list_item, R.id.text_view, resources.getStringArray(R.array.kokoro_quality_labels).toList())
+
+        binding?.buttonInstallKokoro?.setOnClickListener {
+            val pos = binding?.spinnerKokoroQuality?.selectedItemPosition ?: 0
+            val (urls, displayName) = when (pos) {
+                0 -> KOKORO_URLS_INT8 to "Kokoro-en v0_19 (int8)"
+                1 -> KOKORO_URLS_FP16 to "Kokoro-en v0_19 (fp16)"
+                else -> KOKORO_URLS_FP32 to "Kokoro-en v0_19 (fp32)"
+            }
+            installKokoro(listOf(url), displayName)
+        }
     }
 
     private fun setupDownloadLists() {
@@ -113,6 +144,32 @@ class ManageLanguagesActivity  : AppCompatActivity() {
             refreshImportedList()
         }.onFailure { e ->
             Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun installKokoro(urls: List<String>, displayName: String) {
+        binding?.textKokoroStatus?.text = "Downloading $displayName..."
+        lifecycleScope.launch {
+            try {
+                val archive = KokoroInstaller.downloadFirstAvailable(this@ManageLanguagesActivity, urls)
+                binding?.textKokoroStatus?.text = "Extracting ${archive.name}..."
+                val outDir = KokoroInstaller.extractToModelsDir(this@ManageLanguagesActivity, archive)
+                if (!KokoroInstaller.looksLikeKokoro(outDir)) {
+                    binding?.textKokoroStatus?.text = "Extracted, but not a Kokoro pack."
+                    return@launch
+                }
+                val db = LangDB.getInstance(this@ManageLanguagesActivity)
+                val modelName = outDir.name
+                val exists = db.allInstalledLanguages.any { it.lang == modelName }
+                if (!exists) {
+                    db.addLanguage(displayName, "en", "US", 0, 1.0f, 1.0f, "kokoro")
+                }
+                PreferenceHelper(this@ManageLanguagesActivity).setCurrentLanguage(modelName)
+                binding?.textKokoroStatus?.text = "Installed: $displayName"
+                refreshImportedList()
+            } catch (e: Exception) {
+                binding?.textKokoroStatus?.text = "Kokoro install failed: ${e.message}"
+            }
         }
     }
 

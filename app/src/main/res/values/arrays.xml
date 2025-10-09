@@ -1,4 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encod<resources>
+    <!-- Existing Piper/Coqui arrays remain here -->
+
+    <string-array name="kokoro_models">
+        <item>Kokoro Small (82M) – en-US</item>
+        <item>Kokoro Medium – en-US</item>
+        <item>Kokoro Large – en-US</item>
+    </string-array>
+</resources>ing="utf-8"?>
 <resources>
     <!-- Keep existing arrays in your project; merge these if arrays.xml already exists -->
     <string-array name="kokoro_models">

@@ -1,109 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp">
+            android:paddingTop="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/piper_models"
-                android:textStyle="bold"
-                android:textSize="16sp"/>
-
-            <ListView
-                android:id="@+id/piperModelList"
+            <!-- Source tabs (three choices) -->
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/installSourceTabs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:dividerHeight="1dp"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="12dp"
+                android:checkedButton="@+id/tab_piper">
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tab_piper"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/piper_models" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tab_coqui"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/coqui_models" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tab_kokoro"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/kokoro_models_label" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- Piper -->
             <TextView
+                android:id="@+id/label_piper"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/coqui_models"
-                android:textStyle="bold"
-                android:textSize="16sp"/>
-
-            <ListView
-                android:id="@+id/coquiModelList"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:dividerHeight="1dp"
-                android:layout_marginBottom="12dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Kokoro models"
-                android:textStyle="bold"
-                android:textSize="16sp"/>
+                android:text="@string/piper_models" />
 
             <Spinner
-                android:id="@+id/kokoro_models"
+                android:id="@+id/spinnerPiper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:spinnerMode="dropdown"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="8dp"/>
-
-            <Button
-                android:id="@+id/button_install"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Install selected Kokoro"
                 android:layout_marginBottom="12dp"/>
 
+            <!-- Coqui -->
+            <TextView
+                android:id="@+id/label_coqui"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/coqui_models" />
+
+            <Spinner
+                android:id="@+id/spinnerCoqui"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Kokoro -->
+            <TextView
+                android:id="@+id/label_kokoro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/kokoro_models_label" />
+
+            <Spinner
+                android:id="@+id/spinnerKokoro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Install -->
+            <Button
+                android:id="@+id/buttonInstall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/install_selected"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Imported voices -->
             <TextView
                 android:id="@+id/imported_header"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Imported voices (tap to activate, long-press to delete)"
+                android:text="@string/imported_voices_help"
                 android:textStyle="bold"
                 android:textSize="16sp"
                 android:layout_marginTop="8dp" />
 
             <ListView
-                android:id="@+id/imported_list"
+                android:id="@+id/importedList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:dividerHeight="1dp" />
 
-            <Button
-                android:id="@+id/button_import_local"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Import local voice"
-                android:layout_marginTop="12dp" />
-
-            <TextView
-                android:id="@+id/downloadSize"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 MB / 0 MB"
-                android:visibility="gone"
-                android:layout_marginTop="8dp"
-                android:textAppearance="?android:attr/textAppearanceSmall" />
-
+            <!-- Start (hidden) -->
             <Button
                 android:id="@+id/buttonStart"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/start_main"
-                android:layout_marginTop="16dp"
+                android:visibility="gone"
                 android:onClick="startMain" />
 
         </LinearLayout>

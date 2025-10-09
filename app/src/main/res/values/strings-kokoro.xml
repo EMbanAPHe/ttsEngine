@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kokoro_models">Kokoro models</string>
+    <string name="kokoro_q8f16">Kokoro (q8f16) – fast</string>
+    <string name="kokoro_fp16">Kokoro (fp16) – quality</string>
+    <string name="kokoro_full">Kokoro (full) – highest quality</string>
+    <string name="kokoro_default_voice_name">af_bella</string>
+    <string name="kokoro_installing">Installing Kokoro…</string>
+    <string name="kokoro_installed">Kokoro installed</string>
+    <string name="kokoro_install_failed">Kokoro install failed</string>
+</resources>

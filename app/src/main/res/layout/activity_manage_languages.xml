@@ -1,124 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="24dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/label_kokoro"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/kokoro_models"
+            android:layout_marginTop="8dp"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <ListView
+            android:id="@+id/kokoroModelList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="12dp">
+            android:dividerHeight="1dp"
+            android:layout_marginBottom="12dp" />
 
-            <!-- Source tabs (three choices) -->
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/installSourceTabs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:checkedButton="@+id/tab_piper">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tab_piper"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/piper_models" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tab_coqui"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/coqui_models" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tab_kokoro"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/kokoro_models_label" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <!-- Piper -->
-            <TextView
-                android:id="@+id/label_piper"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/piper_models" />
-
-            <Spinner
-                android:id="@+id/spinnerPiper"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"/>
-
-            <!-- Coqui -->
-            <TextView
-                android:id="@+id/label_coqui"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/coqui_models" />
-
-            <Spinner
-                android:id="@+id/spinnerCoqui"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"/>
-
-            <!-- Kokoro -->
-            <TextView
-                android:id="@+id/label_kokoro"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/kokoro_models_label" />
-
-            <Spinner
-                android:id="@+id/spinnerKokoro"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"/>
-
-            <!-- Install -->
-            <Button
-                android:id="@+id/buttonInstall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/install_selected"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Imported voices -->
-            <TextView
-                android:id="@+id/imported_header"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/imported_voices_help"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginTop="8dp" />
-
-            <ListView
-                android:id="@+id/importedList"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:dividerHeight="1dp" />
-
-            <!-- Start (hidden) -->
-            <Button
-                android:id="@+id/buttonStart"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/start_main"
-                android:visibility="gone"
-                android:onClick="startMain" />
-
-        </LinearLayout>
-    </ScrollView>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </LinearLayout>
+</ScrollView>

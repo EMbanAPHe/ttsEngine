@@ -1,22 +1,27 @@
-<?xml version="1.0" encod<resources>
-    <!-- Existing Piper/Coqui arrays remain here -->
-
-    <string-array name="kokoro_models">
-        <item>Kokoro Small (82M) – en-US</item>
-        <item>Kokoro Medium – en-US</item>
-        <item>Kokoro Large – en-US</item>
-    </string-array>
-</resources>ing="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Keep existing arrays in your project; merge these if arrays.xml already exists -->
-    <string-array name="kokoro_models">
-        <item>kokoro-en-v0_19 (82M)</item>
-        <item>kokoro-en-small (39M)</item>
+    <!-- Piper & Coqui arrays should already exist in your project.
+         We only add/replace Kokoro entries here. -->
+    <string-array name="kokoro_model_labels">
+        <item>Kokoro v1.0 — model.onnx (≈326 MB • fp32)</item>
+        <item>Kokoro v1.0 — model_fp16.onnx (≈163 MB • fp16)</item>
+        <item>Kokoro v1.0 — model_q4.onnx (≈305 MB • q4)</item>
+        <item>Kokoro v1.0 — model_q4f16.onnx (≈155 MB • q4f16)</item>
+        <item>Kokoro v1.0 — model_q8f16.onnx (≈86 MB • q8f16)</item>
+        <item>Kokoro v1.0 — model_quantized.onnx (≈92 MB • int8 quant)</item>
+        <item>Kokoro v1.0 — model_uint8.onnx (≈177 MB • uint8)</item>
+        <item>Kokoro v1.0 — model_uint8f16.onnx (≈114 MB • uint8f16)</item>
     </string-array>
 
-    <!-- Direct download URLs (update to accurate tar/zip links if different) -->
-    <string-array name="kokoro_model_urls">
-        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/kokoro-en-v0_19.tar?download=true</item>
-        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/kokoro-en-small.tar?download=true</item>
+    <!-- Values used to map a selection index to filenames -->
+    <string-array name="kokoro_model_filenames">
+        <item>model.onnx</item>
+        <item>model_fp16.onnx</item>
+        <item>model_q4.onnx</item>
+        <item>model_q4f16.onnx</item>
+        <item>model_q8f16.onnx</item>
+        <item>model_quantized.onnx</item>
+        <item>model_uint8.onnx</item>
+        <item>model_uint8f16.onnx</item>
     </string-array>
 </resources>

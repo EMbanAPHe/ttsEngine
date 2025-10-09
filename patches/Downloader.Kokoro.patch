@@ -1,0 +1,28 @@
+// In Downloader.java:
+
+// 1) Define Kokoro source enum if not present:
+public enum Source { PIPER, COQUI, KOKORO }
+
+// 2) Make sure these keys match arrays_kokoro.xml items exactly:
+private static final Map<String, String> KOKORO_URLS = new HashMap<String, String>() {{
+    put("kokoro-en-v1_0", "REPLACE_WITH_ARCHIVE_URL_FOR_V1_0");
+    put("kokoro-en-v0_19", "REPLACE_WITH_ARCHIVE_URL_FOR_V0_19");
+    put("kokoro-en-lite", "REPLACE_WITH_ARCHIVE_URL_FOR_LITE");
+}};
+
+// 3) Where you handle the install button click (startDownload), add:
+// (or update) the KOKORO branch to call the KokoroInstaller:
+
+case KOKORO: {
+    final String sel = selectedLabel; // e.g., "kokoro-en-v1_0"
+    final String url = KOKORO_URLS.get(sel);
+    if (url == null) {
+        toast(activity, "Unknown Kokoro model: " + sel);
+        return;
+    }
+    KokoroInstaller.downloadAndInstall(activity, url, sel, new KokoroInstaller.Callback() {
+        @Override public void onSuccess(File modelDir) { toast(activity, "Installed: " + sel); }
+        @Override public void onError(String message) { toast(activity, "Kokoro install failed: " + message); }
+    });
+    break;
+}

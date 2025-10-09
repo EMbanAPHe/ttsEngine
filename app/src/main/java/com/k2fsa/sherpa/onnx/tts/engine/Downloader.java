@@ -1,101 +1,51 @@
 package com.k2fsa.sherpa.onnx.tts.engine;
 
 import android.app.Activity;
-import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
- * Restored, simplified downloader entrypoint.
- * The real download/extract code lives in the existing helpers the app used before.
- * We just fan-out to the correct path based on source (PIPER/COQUI/KOKORO) + the user's selection text.
+ * Minimal Downloader kept for backward compatibility with existing layout.
+ * For Kokoro we call KokoroInstaller directly from ManageLanguagesActivity.
  */
 public class Downloader {
 
-    public enum Source { PIPER, COQUI, KOKORO }
-
-    // Example model map; keep using whatever map/logic your project already had for Piper/Coqui.
-    // For Kokoro we add explicit sizes with stable URLs (you can change to mirrors if needed).
-    private static final Map<String, String> KOKORO_URLS = new HashMap<>();
-    static {
-        // These are example names that must match your arrays.xml labels
-        // Point them at the ONNX-community Kokoro 82M v1.0 artifacts you want to use.
-        // If your installer expects .tar.gz, point to the .tar.gz; if it expects loose files, point accordingly.
-        KOKORO_URLS.put("Kokoro Small (82M) – en-US", "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/kokoro-v1_0.onnx?download=true");
-        KOKORO_URLS.put("Kokoro Medium – en-US",       "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/kokoro-v1_0.onnx?download=true");
-        KOKORO_URLS.put("Kokoro Large – en-US",        "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/kokoro-v1_0.onnx?download=true");
-        // If you have multi-file archives or different locales, extend the map here.
-    }
-
-    public static void startDownload(@NonNull Activity activity,
-                                     @NonNull String selectionText,
-                                     @NonNull Source source) {
-        switch (source) {
-            case PIPER:
-                startPiperDownload(activity, selectionText);
-                break;
-            case COQUI:
-                startCoquiDownload(activity, selectionText);
-                break;
-            case KOKORO:
-                startKokoroDownload(activity, selectionText);
-                break;
+    private static void httpDownload(String url, File out) throws Exception {
+        out.getParentFile().mkdirs();
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        conn.setConnectTimeout(30000);
+        conn.setReadTimeout(30000);
+        InputStream in = conn.getInputStream();
+        FileOutputStream fo = new FileOutputStream(out);
+        byte[] buf = new byte[8192];
+        int r;
+        while ((r = in.read(buf)) != -1) {
+            fo.write(buf, 0, r);
         }
+        fo.close();
+        in.close();
     }
 
-    private static void startPiperDownload(Activity activity, String selectionText) {
-        // Keep your existing Piper model download logic here.
-        // Typically: map selection -> URL(s), download to temp, extract, then:
-        // LangDB.getInstance(activity).addLanguage(...);
-        runToast(activity, "Downloading Piper: " + selectionText);
-        LegacyPiperInstaller.downloadAndInstall(activity, selectionText);
-    }
-
-    private static void startCoquiDownload(Activity activity, String selectionText) {
-        // Keep your existing Coqui model download logic here.
-        runToast(activity, "Downloading Coqui: " + selectionText);
-        LegacyCoquiInstaller.downloadAndInstall(activity, selectionText);
-    }
-
-    private static void startKokoroDownload(Activity activity, String selectionText) {
-        final String url = KOKORO_URLS.get(selectionText);
-        if (url == null) {
-            runToast(activity, "Unknown Kokoro option: " + selectionText);
-            return;
-        }
-        runToast(activity, "Downloading Kokoro: " + selectionText);
-        // Use the Kotlin installer you already added (or keep this class pure-Java if you prefer).
-        KokoroInstaller.downloadAndInstall(activity, selectionText, url, new KokoroInstaller.Callback() {
-            @Override
-            public void onInstalled(String modelName, String lang, String country, String modelType) {
-                // Ensure the language shows up for selection
-                LangDB db = LangDB.getInstance(activity);
-                // Arguments follow your project’s Lang schema: name, lang, country, pitch, speed, gain, type
-                db.addLanguage(modelName, lang, country, 0, 1.0f, 1.0f, modelType);
-                runToast(activity, "Installed " + modelName + " (" + lang + "_" + country + ")");
-            }
-
-            @Override
-            public void onError(String message) {
-                runToast(activity, "Kokoro install failed: " + message);
+    // Legacy stub if something still calls startDownload to fetch piper/coqui
+    public static void startDownload(Activity activity, String url, String outName) {
+        AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
+            try {
+                httpDownload(url, new File(activity.getFilesDir(), outName));
+                activity.runOnUiThread(() -> Toast.makeText(activity, "Downloaded: " + outName, Toast.LENGTH_SHORT).show());
+            } catch (Throwable t) {
+                Log.e("Downloader", "Download failed", t);
+                activity.runOnUiThread(() -> Toast.makeText(activity, "Download failed", Toast.LENGTH_LONG).show());
             }
         });
-    }
-
-    // Small helper to post short toasts from background tasks
-    private static void runToast(Context ctx, String text) {
-        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(ctx, text, Toast.LENGTH_SHORT).show());
-    }
-
-    // Optional: put common target folder logic here if you need it reused
-    public static File getVoicesRoot(Context ctx) {
-        return new File(ctx.getExternalFilesDir(null), "voices");
     }
 }

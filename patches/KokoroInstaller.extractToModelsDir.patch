@@ -1,0 +1,35 @@
+// PATCH: add .tar.gz support in KokoroInstaller.extractToModelsDir()
+// Kotlin snippet (drop into KokoroInstaller.kt inside extractToModelsDir):
+// Replace the when (extension) block with the following:
+
+val lower = archive.name.lowercase()
+when {
+    lower.endsWith(".zip") -> {
+        ZipInputStream(FileInputStream(archive)).use { zis ->
+            extractZipStream(zis, outputDir)
+        }
+    }
+    lower.endsWith(".tar.bz2") || lower.endsWith(".tbz2") -> {
+        BZip2CompressorInputStream(FileInputStream(archive)).use { bzIn ->
+            TarArchiveInputStream(bzIn).use { tis ->
+                extractTarStream(tis, outputDir)
+            }
+        }
+    }
+    lower.endsWith(".tar.gz") || lower.endsWith(".tgz") -> {
+        GzipCompressorInputStream(FileInputStream(archive)).use { gzIn ->
+            TarArchiveInputStream(gzIn).use { tis ->
+                extractTarStream(tis, outputDir)
+            }
+        }
+    }
+    lower.endsWith(".onnx") -> {
+        // Plain ONNX file: just move it to the model directory
+        val modelDir = File(outputDir, archive.nameWithoutExtension)
+        modelDir.mkdirs()
+        archive.copyTo(File(modelDir, archive.name), overwrite = true)
+    }
+    else -> {
+        throw IllegalArgumentException("Unsupported archive format: ${archive.name}")
+    }
+}

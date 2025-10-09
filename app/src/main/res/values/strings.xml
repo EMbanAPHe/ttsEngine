@@ -23,4 +23,7 @@
     <string name="one_model_per_language">One model per language</string>
     <string name="apply_system_speed">Apply system speed</string>
     <string name="volume">Volume</string>
+    <string name="kokoro_models_label">Kokoro models</string>
+    <string name="install_selected">Install selected</string>
+    <string name="imported_voices_help">Imported voices (tap to activate, long-press to delete)</string>
 </resources>

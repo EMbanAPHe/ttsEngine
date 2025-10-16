@@ -1,91 +1,127 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
+import androidx.documentfile.provider.DocumentFile
+import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Installs/registers a Kokoro model entry in the local LangDB.
- *
- * This version avoids the "No value passed for parameter 'country'/'speakerId'/'speed'/'volume'/'modelType'"
- * error by:
- *  - Prefer calling LangDB.registerKokoro(...) with all parameters
- *  - Falling back to LangDB.addLanguage(filename, prettyName) if the helper is not available
- *
- * It uses reflection for registerKokoro so it compiles against both old and new LangDBs.
+ * Installs Kokoro voice/model assets into the app's private storage and registers them
+ * so the rest of the app can discover/select them like Piper & Coqui.
  */
 object KokoroInstaller {
 
     private const val TAG = "KokoroInstaller"
 
+    // Folder names & file extensions used by Kokoro ONNX packs
+    private const val KOKORO_DIR = "kokoro"
+    private const val MODELS_SUBDIR = "onnx"
+    private const val VOICES_SUBDIR = "voices"
+    private const val MODEL_EXT = ".onnx"
+    private const val VOICE_EXT = ".json"
+
+    // App’s notion of “engine”/“model type” label for Kokoro (consistent with DB)
+    private const val ENGINE_ID = "kokoro"
+    private const val MODEL_TYPE = "kokoro-onnx"
+
     /**
-     * @param context Android context
-     * @param selectedFilename the raw filename that identifies the Kokoro model on disk
-     * @param filenameToPretty map from filename -> human-readable name (shown to the user)
+     * Install one Kokoro package (model + voice) from a SAF URI (folder or zip extracted).
+     * The caller provides language, country, and speakerId that should be shown in UI.
      *
-     * Safe to call multiple times; duplicate handling is left to LangDB.
+     * @param context Android context
+     * @param sourceFolderUri SAF Uri pointing to a folder that contains /onnx and /voices
+     * @param language Two-letter language code (e.g. "en")
+     * @param country  Country/locale code (e.g. "US")
+     * @param speakerId Displayable speaker key/name (e.g. "emma" or "vctk_p225")
+     * @param speedPrefKey  String key for speed preference (reuses app’s existing key)
+     * @param volumePrefKey String key for volume preference (reuses app’s existing key)
      */
-    fun registerSelectedKokoro(
+    suspend fun install(
         context: Context,
-        selectedFilename: String,
-        filenameToPretty: Map<String, String>
-    ) {
-        val pretty = filenameToPretty[selectedFilename] ?: "Kokoro 82M"
-
-        // Always try the new API with all args first.
-        val langDb = LangDB.getInstance(context)
-
-        // Prefer: registerKokoro(lang, country, name, modelType, speakerId, speed, volume)
-        // Fallback: addLanguage(filename, prettyName)
-        val ok = tryRegisterKokoroAllArgs(langDb, pretty)
-        if (ok) {
-            Log.i(TAG, "Registered Kokoro via registerKokoro(...)")
-            return
-        }
-
-        // Fallback for older DBs
+        sourceFolderUri: Uri,
+        language: String,
+        country: String,
+        speakerId: String,
+        speedPrefKey: String = "speed",
+        volumePrefKey: String = "volume",
+    ): Boolean = withContext(Dispatchers.IO) {
         try {
-            @Suppress("DEPRECATION")
-            langDb.addLanguage(selectedFilename, pretty)
-            Log.i(TAG, "Registered Kokoro via addLanguage(filename, prettyName) fallback")
-        } catch (t: Throwable) {
-            Log.e(TAG, "Failed to register Kokoro in LangDB", t)
-            // Swallow to avoid crashing callers; UI should surface failure if needed.
-        }
-    }
+            val picked = DocumentFile.fromTreeUri(context, sourceFolderUri)
+            if (picked == null || !picked.isDirectory) {
+                Log.e(TAG, "Invalid Kokoro source folder: $sourceFolderUri")
+                return@withContext false
+            }
 
-    /**
-     * Try to call LangDB.registerKokoro(lang, country, name, modelType, speakerId, speed, volume)
-     * using reflection so we don't hard depend on a specific LangDB version.
-     */
-    private fun tryRegisterKokoroAllArgs(langDb: LangDB, prettyName: String): Boolean {
-        return try {
-            val cls = langDb.javaClass
-            val m = cls.getMethod(
-                "registerKokoro",
-                String::class.java,  // lang
-                String::class.java,  // country
-                String::class.java,  // name
-                String::class.java,  // modelType
-                String::class.java,  // speakerId
-                java.lang.Float.TYPE, // speed (float)
-                java.lang.Float.TYPE  // volume (float)
+            // Find /onnx/*.onnx and /voices/*.json
+            val modelsDir = picked.findFile(MODELS_SUBDIR)
+            val voicesDir = picked.findFile(VOICES_SUBDIR)
+
+            if (modelsDir == null || voicesDir == null) {
+                Log.e(TAG, "Kokoro source must contain /onnx and /voices subfolders")
+                return@withContext false
+            }
+
+            val modelFile = modelsDir.listFiles().firstOrNull { it.name?.endsWith(MODEL_EXT, true) == true }
+            val voiceFile = voicesDir.listFiles().firstOrNull { it.name?.endsWith(VOICE_EXT, true) == true }
+
+            if (modelFile == null || voiceFile == null) {
+                Log.e(TAG, "Missing Kokoro .onnx model or voice .json")
+                return@withContext false
+            }
+
+            // Copy into app storage: /files/kokoro/<language>-<speaker>/{model.onnx, voice.json}
+            val appDir = DocumentFile.fromFile(context.filesDir)
+            val kokoroRoot = appDir.findFile(KOKORO_DIR) ?: appDir.createDirectory(KOKORO_DIR)!!
+            val targetDirName = "${language}_${country}-$speakerId"
+            val targetDir = kokoroRoot.findFile(targetDirName) ?: kokoroRoot.createDirectory(targetDirName)!!
+
+            // Copy model
+            val targetModel = targetDir.findFile(modelFile.name!!) ?: targetDir.createFile(
+                "application/octet-stream",
+                modelFile.name!!
+            )!!
+            context.contentResolver.openInputStream(modelFile.uri).use { input ->
+                context.contentResolver.openOutputStream(targetModel.uri, "rwt").use { out ->
+                    if (input == null || out == null) throw IllegalStateException("Stream open failed")
+                    input.copyTo(out)
+                }
+            }
+
+            // Copy voice
+            val targetVoice = targetDir.findFile(voiceFile.name!!) ?: targetDir.createFile(
+                "application/json",
+                voiceFile.name!!
+            )!!
+            context.contentResolver.openInputStream(voiceFile.uri).use { input ->
+                context.contentResolver.openOutputStream(targetVoice.uri, "rwt").use { out ->
+                    if (input == null || out == null) throw IllegalStateException("Stream open failed")
+                    input.copyTo(out)
+                }
+            }
+
+            // Register in LangDB so UI can list/select this voice like Piper/Coqui
+            // NOTE: The signature below matches the current DB helper (requires country, speakerId, speed, volume, and modelType).
+            LangDB.registerLanguage(
+                context = context,
+                engine = ENGINE_ID,
+                language = language,
+                country = country,
+                speakerId = speakerId,
+                speedPrefKey = speedPrefKey,
+                volumePrefKey = volumePrefKey,
+                modelType = MODEL_TYPE,
+                // Optional display label shown in pickers: "<language>-<country> · <speaker>"
+                displayName = "${language}_${country} · $speakerId",
+                // Optional: absolute directory the assets were copied to (for deletions)
+                installDir = targetDir.uri.toString()
             )
-            // Sensible defaults that match your app’s expectations
-            val args = arrayOf(
-                "en",            // lang
-                "US",            // country
-                prettyName,      // name shown in UI
-                "kokoro",        // modelType tag
-                "af",            // default speaker id (e.g., 'af' = adult female)
-                1.0f,            // speed
-                1.0f             // volume
-            )
-            m.invoke(langDb, *args)
+
             true
-        } catch (_: NoSuchMethodException) {
-            false
-        } catch (t: Throwable) {
-            Log.w(TAG, "registerKokoro(...) exists but invocation failed, will fallback", t)
+        } catch (e: Throwable) {
+            Log.e(TAG, "Kokoro install failed", e)
             false
         }
     }

@@ -85,3 +85,30 @@ object KokoroInstaller {
         return allOk
     }
 }
+// --- Compatibility overload for older call sites ---
+// Keep this in the same package: com.k2fsa.sherpa.onnx.tts.engine
+// so the existing call at KokoroInstaller.kt:76 compiles again.
+@Suppress("unused")
+fun registerKokoro(
+    context: android.content.Context,
+    language: String
+) {
+    // Provide sane defaults that match the rest of the app.
+    // Adjust only if you intentionally want different defaults.
+    val defaultCountry = "US"
+    val defaultSpeakerId = 0
+    val defaultSpeed = 1.0f
+    val defaultVolume = 1.0f
+    val defaultModelType = "kokoro_82m" // keep consistent with your model list
+
+    // Call the newer signature (the one your project now defines elsewhere)
+    registerKokoro(
+        context = context,
+        language = language,
+        country = defaultCountry,
+        speakerId = defaultSpeakerId,
+        speed = defaultSpeed,
+        volume = defaultVolume,
+        modelType = defaultModelType
+    )
+}

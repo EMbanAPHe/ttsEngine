@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="kokoro_title">Kokoro models</string>
-    <string name="kokoro_installing">Downloading Kokoro model…</string>
     <string name="kokoro_done">Kokoro installed</string>
     <string name="kokoro_failed">Failed to install Kokoro</string>
 </resources>

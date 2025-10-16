@@ -1,32 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- App -->
-    <string name="app_name">Sherpa TTS</string>
 
-    <!-- Existing keys that the linker/warnings complained about -->
+    <!-- Existing strings in your fork -->
+    <string name="app_name">Sherpa TTK</string>
+    <string name="kokoro_title">Kokoro models</string>
+    <string name="kokoro_done">Kokoro installed</string>
+    <string name="kokoro_failed">Failed to install Kokoro</string>
+
+    <!-- Add missing defaults to stop "removing resource ... without required default value" -->
     <string name="coqui_models">Coqui models</string>
     <string name="dialog_Later_button">Later</string>
     <string name="dialog_StarOnGitHub">Star on GitHub</string>
     <string name="download_language">Download language</string>
     <string name="error_download">Download failed</string>
-    <string name="input">Input</string>
-    <string name="language_id">Language</string>
-    <string name="one_model_per_language">One model per language</string>
+
+    <!-- Optional but recommended to keep parity with the original master -->
     <string name="piper_models">Piper models</string>
-    <string name="play">Play</string>
+    <string name="one_model_per_language">One model per language</string>
+    <string name="language_id">Language</string>
     <string name="speaker_id">Speaker</string>
     <string name="speed">Speed</string>
-    <string name="apply_system_speed">Apply system speed</string>
-    <string name="start_main">Start</string>
-    <string name="stop">Stop</string>
-    <string name="test_languages">Test languages</string>
     <string name="volume">Volume</string>
-    <string name="add_language">Add</string>
-    <string name="delete_language">Delete</string>
+    <string name="play">Play</string>
+    <string name="stop">Stop</string>
+    <string name="input">Input</string>
+    <string name="test_languages">Test languages</string>
+    <string name="start_main">Start</string>
 
-    <!-- Kokoro -->
-    <string name="kokoro_title">Kokoro models</string>
-    <string name="kokoro_done">Kokoro installed</string>
-    <string name="kokoro_failed">Failed to install Kokoro</string>
-    <string name="kokoro_installing">Installing Kokoro…</string>
 </resources>

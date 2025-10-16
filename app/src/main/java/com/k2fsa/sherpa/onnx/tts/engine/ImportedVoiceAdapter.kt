@@ -9,8 +9,8 @@ import android.widget.TextView
 
 class ImportedVoiceAdapter(
     context: Context,
-    private val items: List<LangDB.LanguageEntry>
-) : ArrayAdapter<LangDB.LanguageEntry>(context, R.layout.list_item, items) {
+    private val items: List<LanguageEntry>
+) : ArrayAdapter<LanguageEntry>(context, R.layout.list_item, items) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.list_item, parent, false)

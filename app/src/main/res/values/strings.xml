@@ -1,29 +1,34 @@
 <resources>
-    <string name="app_name">Sherpa TTS</string>
 
-    <!-- Common -->
-    <string name="play">Play</string>
-    <string name="stop">Stop</string>
+    <!-- Existing app ids -->
+    <string name="app_name">SherpaTTS</string>
+
+    <!-- IDs your Kotlin referenced but AAPT removed due to missing defaults -->
     <string name="input">Input</string>
-    <string name="speed">Speed</string>
-    <string name="volume">Volume</string>
-    <string name="speaker_id">Speaker</string>
-    <string name="language_id">Language</string>
-    <string name="start_main">Start</string>
-    <string name="test_languages">Test languages</string>
+    <string name="language_id">Language ID</string>
     <string name="one_model_per_language">One model per language</string>
-
-    <!-- Lists / Manage -->
     <string name="piper_models">Piper models</string>
     <string name="coqui_models">Coqui models</string>
+    <string name="play">Play</string>
+    <string name="speaker_id">Speaker ID</string>
+    <string name="speed">Speed</string>
+    <string name="start_main">Start</string>
+    <string name="stop">Stop</string>
+    <string name="test_languages">Test languages</string>
+    <string name="volume">Volume</string>
+
+    <!-- The dialog strings AAPT warned about -->
+    <string name="dialog_Later_button">Later</string>
+    <string name="dialog_StarOnGitHub">Star on GitHub</string>
+
+    <!-- Download strings AAPT warned about -->
     <string name="download_language">Download language</string>
     <string name="error_download">Download failed</string>
 
-    <!-- Dialogs -->
-    <string name="dialog_StarOnGitHub">Star on GitHub</string>
-    <string name="dialog_Later_button">Later</string>
-
-    <!-- Kokoro -->
+    <!-- Kokoro-specific labels -->
+    <string name="kokoro">Kokoro</string>
+    <string name="kokoro_install">Install Kokoro</string>
     <string name="kokoro_installing">Installing Kokoro…</string>
     <string name="kokoro_models">Kokoro models</string>
+
 </resources>

@@ -47,6 +47,8 @@ class ManageLanguagesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_manage_languages)
+        piperModelList = resources.getStringArray(R.array.piper_models).toList()
+        coquiModelList = resources.getStringArray(R.array.coqui_models).toList()
 
         listImported = findViewById(R.id.list_imported)
         emptyView = findViewById(R.id.empty_view)

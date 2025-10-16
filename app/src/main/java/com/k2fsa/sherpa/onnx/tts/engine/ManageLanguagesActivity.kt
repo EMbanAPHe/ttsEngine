@@ -36,6 +36,13 @@ class ManageLanguagesActivity : AppCompatActivity() {
     // Imported list we control here
     private val importedList = mutableListOf<LanguageEntry>()
     private lateinit var importedAdapter: ImportedVoiceAdapter
+    // Model name lists expected by legacy UI code:
+    private lateinit var piperModelList: List<String>
+    private lateinit var coquiModelList: List<String>
+
+    // If your UI shows/imports locally added voices, keep a data list.
+    // Adjust the type if your project uses a different LanguageEntry model.
+    private val importedList: MutableList<LangDB.LanguageEntry> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

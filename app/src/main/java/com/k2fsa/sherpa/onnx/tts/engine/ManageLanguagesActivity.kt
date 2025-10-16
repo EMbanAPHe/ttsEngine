@@ -7,15 +7,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
 import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
 
-/**
- * Lets the user see what models are installed (Piper, Coqui, Kokoro), and remove them.
- * Restores mutable lists and wiring that were missing/renamed causing compile errors.
- */
 class ManageLanguagesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityManageLanguagesBinding
 
-    // These must be 'var' so we can reassign the lists after DB queries.
+    // Must be var (we reassign lists after DB reloads)
     private var piperModelList: MutableList<String> = mutableListOf()
     private var coquiModelList: MutableList<String> = mutableListOf()
     private var importedList: MutableList<LangDB.LanguageEntry> = mutableListOf()
@@ -25,10 +21,9 @@ class ManageLanguagesActivity : AppCompatActivity() {
         binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Fill lists from DB
         reloadLists()
 
-        // Show Piper models
+        // Piper
         binding.piperModelsLabel.text = getString(R.string.piper_models)
         binding.piperModels.adapter = ArrayAdapter(
             this,
@@ -36,7 +31,7 @@ class ManageLanguagesActivity : AppCompatActivity() {
             piperModelList
         )
 
-        // Show Coqui models
+        // Coqui
         binding.coquiModelsLabel.text = getString(R.string.coqui_models)
         binding.coquiModels.adapter = ArrayAdapter(
             this,
@@ -44,7 +39,7 @@ class ManageLanguagesActivity : AppCompatActivity() {
             coquiModelList
         )
 
-        // Show “Imported” (all engines) as language entries
+        // Imported (all engines) — uses our adapter with LanguageEntry
         binding.importedLabel.visibility = View.VISIBLE
         binding.imported.adapter = ImportedVoiceAdapter(
             this,
@@ -52,7 +47,6 @@ class ManageLanguagesActivity : AppCompatActivity() {
             importedList
         )
 
-        // Delete selected imported entry
         binding.deleteImported.setOnClickListener {
             val pos = binding.imported.checkedItemPosition
             if (pos >= 0 && pos < importedList.size) {
@@ -69,11 +63,8 @@ class ManageLanguagesActivity : AppCompatActivity() {
     }
 
     private fun reloadLists() {
-        // Piper / Coqui lists are simple strings for display
         piperModelList = LangDB.getModelDisplayList(this, engine = "piper").toMutableList()
         coquiModelList = LangDB.getModelDisplayList(this, engine = "coqui").toMutableList()
-
-        // The “imported” list shows every installed language entry across engines
         importedList = LangDB.getAllLanguages(this).toMutableList()
     }
 }

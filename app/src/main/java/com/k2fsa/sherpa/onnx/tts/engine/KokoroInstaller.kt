@@ -2,113 +2,62 @@ package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.content.Context
 import android.util.Log
-import androidx.annotation.WorkerThread
-import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
-import java.io.File
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-object KokoroInstaller {
+class KokoroInstaller(
+    private val activity: ManageLanguagesActivity
+) {
+    private val tag = "KokoroInstaller"
 
-    private const val TAG = "KokoroInstaller"
-
-    // Minimal model descriptor so we can install by type+voice
-    data class KokoroModel(
-        val modelType: String,         // e.g. "82M", "120M", etc.
-        val voice: String,             // voice name, e.g. "af_heart" etc.
-        val modelUrl: String,          // direct .onnx URL
-        val configUrl: String          // direct .json (or metadata) URL if required
-    )
-
-    /**
-     * Install a Kokoro model and register it in LangDB.
-     *
-     * NOTE: LangDB.registerKokoro now requires:
-     *   language, country, speakerId, speed, volume, modelType, voice, modelUrl, configUrl
-     */
-    @WorkerThread
     fun installKokoro(
-        context: Context,
-        model: KokoroModel,
-        // sane defaults so the call site never breaks again
-        language: String = "en",
-        country: String = "US",
-        speakerId: Int = 0,
-        speed: Float = 1.0f,
-        volume: Float = 1.0f,
-    ): Boolean {
-        return try {
-            // If you download to local files first, do it here.
-            // The code below assumes URLs are persisted in DB (same pattern the app uses for piper/coqui).
-            val ok = LangDB.registerKokoro(
-                context = context,
-                language = language,
-                country = country,
-                speakerId = speakerId,
-                speed = speed,
-                volume = volume,
-                modelType = model.modelType,
-                voice = model.voice,
-                modelUrl = model.modelUrl,
-                configUrl = model.configUrl
-            )
-            if (!ok) {
-                Log.e(TAG, "registerKokoro returned false for ${model.modelType}/${model.voice}")
+        language: String,
+        modelName: String,
+        modelUrl: String,
+    ) {
+        activity.lifecycleScope.launch {
+            try {
+                val ctx = activity.applicationContext
+
+                // Download model into app's models dir (same pattern as Piper in the original)
+                val localPath = withContext(Dispatchers.IO) {
+                    FileDownloader.downloadToModelsDir(
+                        context = ctx,
+                        url = modelUrl,
+                        fileName = "$modelName.onnx"
+                    )
+                }
+
+                // *** EXACT: pass every required param to LangDB.registerKokoro ***
+                LangDB.registerKokoro(
+                    context = ctx,
+                    language = language,
+                    country = "US",
+                    speakerId = 0,
+                    speed = 1.0f,
+                    volume = 1.0f,
+                    modelType = "kokoro",
+                    modelName = modelName,
+                    modelUrl = localPath
+                )
+
+                activity.toast(activity.getString(R.string.kokoro_installed, modelName))
+                activity.refreshLists()
+            } catch (t: Throwable) {
+                Log.e(tag, "Kokoro install failed", t)
+                activity.toast(activity.getString(R.string.error_download, t.message ?: "unknown"))
             }
-            ok
-        } catch (t: Throwable) {
-            Log.e(TAG, "installKokoro failed", t)
-            false
         }
-    }
-
-    /**
-     * Example helper to bulk-install a set the UI offers.
-     * Call this from ManageLanguagesActivity when the user taps “Install Kokoro”.
-     */
-    @WorkerThread
-    fun installDefaultSet(context: Context): Boolean {
-        // Fill with whatever variants you’re exposing in UI
-        val wanted = listOf(
-            KokoroModel(
-                modelType = "82M",
-                voice = "af_heart",
-                modelUrl = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/kokoro-en-v1_0.onnx?download=true",
-                configUrl = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/voices.json?download=true"
-            ),
-            // add more here (all sizes/voices you want)
-        )
-
-        var allOk = true
-        for (m in wanted) {
-            val ok = installKokoro(context, m)
-            allOk = allOk && ok
-        }
-        return allOk
     }
 }
-// --- Compatibility overload for older call sites ---
-// Keep this in the same package: com.k2fsa.sherpa.onnx.tts.engine
-// so the existing call at KokoroInstaller.kt:76 compiles again.
-@Suppress("unused")
-fun registerKokoro(
-    context: android.content.Context,
-    language: String
-) {
-    // Provide sane defaults that match the rest of the app.
-    // Adjust only if you intentionally want different defaults.
-    val defaultCountry = "US"
-    val defaultSpeakerId = 0
-    val defaultSpeed = 1.0f
-    val defaultVolume = 1.0f
-    val defaultModelType = "kokoro_82m" // keep consistent with your model list
 
-    // Call the newer signature (the one your project now defines elsewhere)
-    registerKokoro(
-        context = context,
-        language = language,
-        country = defaultCountry,
-        speakerId = defaultSpeakerId,
-        speed = defaultSpeed,
-        volume = defaultVolume,
-        modelType = defaultModelType
-    )
+object FileDownloader {
+    fun downloadToModelsDir(context: Context, url: String, fileName: String): String {
+        val modelsDir = context.getExternalFilesDir(null)!!.resolve("models").apply { mkdirs() }
+        val outFile = modelsDir.resolve(fileName)
+        Http.download(url, outFile)  // same tiny helper used elsewhere in the project
+        return outFile.absolutePath
+    }
 }

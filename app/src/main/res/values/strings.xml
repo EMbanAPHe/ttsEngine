@@ -1,8 +1,7 @@
 <resources>
-    <!-- App -->
     <string name="app_name">Sherpa TTS</string>
 
-    <!-- Common UI -->
+    <!-- Common -->
     <string name="play">Play</string>
     <string name="stop">Stop</string>
     <string name="input">Input</string>
@@ -14,15 +13,17 @@
     <string name="test_languages">Test languages</string>
     <string name="one_model_per_language">One model per language</string>
 
-    <!-- Manage Languages screen -->
+    <!-- Lists / Manage -->
     <string name="piper_models">Piper models</string>
     <string name="coqui_models">Coqui models</string>
     <string name="download_language">Download language</string>
     <string name="error_download">Download failed</string>
+
+    <!-- Dialogs -->
     <string name="dialog_StarOnGitHub">Star on GitHub</string>
     <string name="dialog_Later_button">Later</string>
 
-    <!-- Kokoro installer strings -->
+    <!-- Kokoro -->
     <string name="kokoro_installing">Installing Kokoro…</string>
     <string name="kokoro_models">Kokoro models</string>
 </resources>

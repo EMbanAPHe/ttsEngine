@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Add/adjust these IDs to match your Downloader's expected identifiers -->
+    <!-- Display names shown to the user for each Kokoro model size/precision -->
     <string-array name="kokoro_models">
-        <item>kokoro-en-v0_19</item>
-        <item>kokoro-en-v1_0</item>
-        <item>kokoro-en-lite</item>
+        <item>Kokoro 82M FP32 (326 MB)</item>
+        <item>Kokoro 82M FP16 (163 MB)</item>
+        <item>Kokoro 82M Q4 (305 MB)</item>
+        <item>Kokoro 82M Q4F16 (155 MB)</item>
+        <item>Kokoro 82M Q8F16 (86 MB)</item>
+        <item>Kokoro 82M Quantized (92 MB)</item>
+        <item>Kokoro 82M UINT8 (177 MB)</item>
+        <item>Kokoro 82M UINT8F16 (114 MB)</item>
+    </string-array>
+
+    <!-- Matching download URLs (index-aligned with kokoro_models) -->
+    <string-array name="kokoro_model_urls">
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_fp16.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_q4.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_q4f16.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_q8f16.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_quantized.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_uint8.onnx?download=true</item>
+        <item>https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_uint8f16.onnx?download=true</item>
     </string-array>
 </resources>

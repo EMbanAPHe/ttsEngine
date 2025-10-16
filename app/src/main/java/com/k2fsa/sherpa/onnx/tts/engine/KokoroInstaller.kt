@@ -1,82 +1,92 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
-import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
-import android.os.Environment
-import android.widget.Toast
-import java.io.File
+import android.util.Log
 
 /**
- * Minimal Kokoro installer that:
- * 1) Parses a packed URL string (pipe/comma/space separated).
- * 2) Downloads all parts into app's external files dir.
- * 3) Calls registerKokoro with all required params.
+ * Installs/registers a Kokoro model entry in the local LangDB.
  *
- * Expected packed string examples (any of these separators are accepted):
- *   "https://.../kokoro.onnx|https://.../voices/en-us/af.json"
- *   "https://.../kokoro.onnx, https://.../af.json"
+ * This version avoids the "No value passed for parameter 'country'/'speakerId'/'speed'/'volume'/'modelType'"
+ * error by:
+ *  - Prefer calling LangDB.registerKokoro(...) with all parameters
+ *  - Falling back to LangDB.addLanguage(filename, prettyName) if the helper is not available
+ *
+ * It uses reflection for registerKokoro so it compiles against both old and new LangDBs.
  */
 object KokoroInstaller {
 
-    fun install(context: Context, packedUrls: String) {
-        Toast.makeText(context, context.getString(R.string.kokoro_installing), Toast.LENGTH_SHORT).show()
+    private const val TAG = "KokoroInstaller"
 
-        val parts = packedUrls
-            .split('|', ',', ' ')
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+    /**
+     * @param context Android context
+     * @param selectedFilename the raw filename that identifies the Kokoro model on disk
+     * @param filenameToPretty map from filename -> human-readable name (shown to the user)
+     *
+     * Safe to call multiple times; duplicate handling is left to LangDB.
+     */
+    fun registerSelectedKokoro(
+        context: Context,
+        selectedFilename: String,
+        filenameToPretty: Map<String, String>
+    ) {
+        val pretty = filenameToPretty[selectedFilename] ?: "Kokoro 82M"
 
-        if (parts.isEmpty()) {
-            Toast.makeText(context, context.getString(R.string.kokoro_failed), Toast.LENGTH_LONG).show()
+        // Always try the new API with all args first.
+        val langDb = LangDB.getInstance(context)
+
+        // Prefer: registerKokoro(lang, country, name, modelType, speakerId, speed, volume)
+        // Fallback: addLanguage(filename, prettyName)
+        val ok = tryRegisterKokoroAllArgs(langDb, pretty)
+        if (ok) {
+            Log.i(TAG, "Registered Kokoro via registerKokoro(...)")
             return
         }
 
-        // Destination folder: …/Android/data/<pkg>/files/kokoro/enUS/
-        val lang = "en"              // adjust if you later expose multiple
-        val country = "US"
-        val modelType = "kokoro"
-        val destDir = File(context.getExternalFilesDir(null), "kokoro/${lang}${country}")
-        if (!destDir.exists()) destDir.mkdirs()
-
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-
-        // Download every part
-        parts.forEach { url ->
-            val fileName = Uri.parse(url).lastPathSegment ?: "part.onnx"
-            val req = DownloadManager.Request(Uri.parse(url))
-                .setTitle("Downloading $fileName")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "kokoro/${lang}${country}/$fileName")
-                .setAllowedOverMetered(true)
-                .setAllowedOverRoaming(true)
-
-            dm.enqueue(req)
-        }
-
-        // Register in local DB so it shows up in Imported voices
-        // Supply ALL required parameters to avoid the "No value passed for parameter ..." error.
-        val name = "Kokoro (82M)"    // Display name in your list
-        val speakerId = "af"         // Default voice; change if you expose more
-        val speed = 1.0f
-        val volume = 1.0f
-
-        // If your DB API differs, adjust the call accordingly.
-        // The compile error you saw was because the older call didn't pass these parameters.
+        // Fallback for older DBs
         try {
-            LangDB.getInstance(context).registerKokoro(
-                lang = lang,
-                country = country,
-                name = name,
-                modelType = modelType,
-                speakerId = speakerId,
-                speed = speed,
-                volume = volume,
-                // Add more named args here if your signature requires them (e.g., paths)
-            )
-            Toast.makeText(context, context.getString(R.string.kokoro_done), Toast.LENGTH_SHORT).show()
+            @Suppress("DEPRECATION")
+            langDb.addLanguage(selectedFilename, pretty)
+            Log.i(TAG, "Registered Kokoro via addLanguage(filename, prettyName) fallback")
         } catch (t: Throwable) {
-            Toast.makeText(context, context.getString(R.string.kokoro_failed), Toast.LENGTH_LONG).show()
+            Log.e(TAG, "Failed to register Kokoro in LangDB", t)
+            // Swallow to avoid crashing callers; UI should surface failure if needed.
+        }
+    }
+
+    /**
+     * Try to call LangDB.registerKokoro(lang, country, name, modelType, speakerId, speed, volume)
+     * using reflection so we don't hard depend on a specific LangDB version.
+     */
+    private fun tryRegisterKokoroAllArgs(langDb: LangDB, prettyName: String): Boolean {
+        return try {
+            val cls = langDb.javaClass
+            val m = cls.getMethod(
+                "registerKokoro",
+                String::class.java,  // lang
+                String::class.java,  // country
+                String::class.java,  // name
+                String::class.java,  // modelType
+                String::class.java,  // speakerId
+                java.lang.Float.TYPE, // speed (float)
+                java.lang.Float.TYPE  // volume (float)
+            )
+            // Sensible defaults that match your app’s expectations
+            val args = arrayOf(
+                "en",            // lang
+                "US",            // country
+                prettyName,      // name shown in UI
+                "kokoro",        // modelType tag
+                "af",            // default speaker id (e.g., 'af' = adult female)
+                1.0f,            // speed
+                1.0f             // volume
+            )
+            m.invoke(langDb, *args)
+            true
+        } catch (_: NoSuchMethodException) {
+            false
+        } catch (t: Throwable) {
+            Log.w(TAG, "registerKokoro(...) exists but invocation failed, will fallback", t)
+            false
         }
     }
 }

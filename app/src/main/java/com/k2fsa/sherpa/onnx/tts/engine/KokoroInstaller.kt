@@ -73,7 +73,7 @@ object KokoroInstaller {
 
                 // Register in LangDB so it appears with imported voices (implementation is in your project)
                 try {
-                    LangDB.getInstance(context).registerKokoro(selectedFilename, filenameToPretty[selectedFilename] ?: "Kokoro 82M")
+                    LangDB.getInstance(context).addLanguage(selectedFilename, filenameToPretty[selectedFilename] ?: "Kokoro 82M")
                 } catch (_: Throwable) { /* no-op if helper not present */ }
 
                 Toast.makeText(context, context.getString(R.string.kokoro_done), Toast.LENGTH_SHORT).show()

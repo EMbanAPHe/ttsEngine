@@ -1,38 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- App -->
-    <string name="app_name">SherpaTTS</string>
-
-    <!-- Main UI -->
-    <string name="start_main">Start</string>
-    <string name="input">Text</string>
-    <string name="play">Play</string>
-    <string name="stop">Stop</string>
-    <string name="volume">Volume</string>
-    <string name="speed">Speed</string>
-    <string name="apply_system_speed">Use system speech rate</string>
-    <string name="speaker_id">Speaker</string>
-    <string name="language_id">Language</string>
-    <string name="one_model_per_language">One model per language</string>
-
-    <!-- Manage Languages -->
-    <string name="test_languages">Manage languages</string>
-    <string name="download_language">Download</string>
-    <string name="delete_language">Delete</string>
-    <string name="add_language">Add</string>
-
-    <!-- Catalog headers from the original -->
-    <string name="piper_models">Piper models</string>
+    <!-- Defaults that were being stripped by aapt2 in your CI logs -->
     <string name="coqui_models">Coqui models</string>
-
-    <!-- Kokoro -->
-    <string name="kokoro_models">Kokoro models</string>
-    <string name="kokoro_installing">Installing %1$s…</string>
-    <string name="kokoro_installed">%1$s installed</string>
-
-    <!-- Dialog / misc -->
-    <string name="dialog_StarOnGitHub">Star on GitHub</string>
     <string name="dialog_Later_button">Later</string>
+    <string name="dialog_StarOnGitHub">Star on GitHub</string>
+    <string name="download_language">Download language</string>
+    <string name="error_download">Download failed</string>
 
-    <!-- Errors -->
-    <string name="error_download">Download failed: %1$s</string>
+    <!-- Earlier builds also stripped these; include safe defaults -->
+    <string name="input">Input</string>
+    <string name="language_id">Language ID</string>
+    <string name="one_model_per_language">One model per language</string>
+    <string name="piper_models">Piper models</string>
+    <string name="play">Play</string>
+    <string name="speaker_id">Speaker ID</string>
+    <string name="speed">Speed</string>
+    <string name="start_main">Start</string>
+    <string name="stop">Stop</string>
+    <string name="test_languages">Test languages</string>
+    <string name="volume">Volume</string>
+
+    <!-- Kokoro labels (single source of truth) -->
+    <string name="kokoro_models">Kokoro models</string>
+    <string name="kokoro_installing">Installing Kokoro…</string>
 </resources>

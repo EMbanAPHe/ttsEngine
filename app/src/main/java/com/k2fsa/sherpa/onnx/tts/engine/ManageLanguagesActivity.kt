@@ -1,81 +1,72 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.os.Bundle
-import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.ListView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
-import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB.LanguageEntry
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
 
 class ManageLanguagesActivity : AppCompatActivity() {
 
-    private lateinit var listImported: ListView
-    private lateinit var emptyView: TextView
-    private lateinit var btnInstallKokoro: Button
+    private lateinit var binding: ActivityManageLanguagesBinding
 
-    // Provide locals so references compile even if you trimmed resources
-    private val piperModelList: List<String> by lazy {
-        try {
-            resources.getStringArray(R.array.piper_models).toList()
-        } catch (_: Throwable) {
-            emptyList()
-        }
-    }
-
-    private val coquiModelList: List<String> by lazy {
-        try {
-            resources.getStringArray(R.array.coqui_models).toList()
-        } catch (_: Throwable) {
-            emptyList()
-        }
-    }
-
-    // Imported list we control here
-    private val importedList = mutableListOf<LanguageEntry>()
+    private lateinit var piperAdapter: DownloadableModelAdapter
+    private lateinit var coquiAdapter: DownloadableModelAdapter
     private lateinit var importedAdapter: ImportedVoiceAdapter
-    // Model name lists expected by legacy UI code:
-    private lateinit var piperModelList: List<String>
-    private lateinit var coquiModelList: List<String>
 
-    // If your UI shows/imports locally added voices, keep a data list.
-    // Adjust the type if your project uses a different LanguageEntry model.
-    private val importedList: MutableList<LangDB.LanguageEntry> = mutableListOf()
+    private val kokoro by lazy { KokoroInstaller(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_manage_languages)
-        piperModelList = resources.getStringArray(R.array.piper_models).toList()
-        coquiModelList = resources.getStringArray(R.array.coqui_models).toList()
+        binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        listImported = findViewById(R.id.list_imported)
-        emptyView = findViewById(R.id.empty_view)
-        btnInstallKokoro = findViewById(R.id.button_install_kokoro)
+        // Lists (IDs match original master layout)
+        binding.piperModelList.layoutManager = LinearLayoutManager(this)
+        binding.coquiModelList.layoutManager = LinearLayoutManager(this)
+        binding.importedList.layoutManager = LinearLayoutManager(this)
 
-        importedAdapter = ImportedVoiceAdapter(this, importedList)
-        listImported.adapter = importedAdapter
-        listImported.emptyView = emptyView
+        // Piper (original behavior)
+        piperAdapter = DownloadableModelAdapter(
+            this,
+            LangDB.piperCatalog(),
+            onInstall = { lang, name, url ->
+                PiperInstaller(this).installPiper(lang, name, url)
+            }
+        )
+        binding.piperModelList.adapter = piperAdapter
 
-        // Populate from DB
-        refreshImported()
+        // Coqui (original behavior)
+        coquiAdapter = DownloadableModelAdapter(
+            this,
+            LangDB.coquiCatalog(),
+            onInstall = { lang, name, url ->
+                CoquiInstaller(this).installCoqui(lang, name, url)
+            }
+        )
+        binding.coquiModelList.adapter = coquiAdapter
 
-        btnInstallKokoro.setOnClickListener {
-            // Install a default set; you can expand this to show a chooser dialog
-            Thread {
-                val ok = KokoroInstaller.installDefaultSet(this)
-                runOnUiThread {
-                    if (ok) refreshImported()
-                    // optionally toast result
-                }
-            }.start()
+        // Imported voices (includes Kokoro after install)
+        importedAdapter = ImportedVoiceAdapter(this, LangDB.listImportedVoices(this))
+        binding.importedList.adapter = importedAdapter
+
+        // Example Kokoro install trigger (wire to your actual button/menu if present)
+        // This shows 82M; add more buttons for the other sizes if you like.
+        // If you don't have such a button in the layout, delete this block.
+        binding.buttonInstallKokoroSmall?.setOnClickListener {
+            kokoro.installKokoro(
+                language = "en",
+                modelName = "Kokoro-82M-v1.0",
+                modelUrl = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/kokoro-v1_0.onnx?download=true"
+            )
         }
     }
 
-    private fun refreshImported() {
-        importedList.clear()
-        importedList.addAll(LangDB.getAllLanguages(this)) // or whatever getter you have
+    fun refreshLists() {
+        importedAdapter.submitList(LangDB.listImportedVoices(this))
         importedAdapter.notifyDataSetChanged()
+    }
+
+    fun toast(msg: String) {
+        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
     }
 }

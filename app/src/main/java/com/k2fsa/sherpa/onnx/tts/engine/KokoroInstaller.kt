@@ -2,103 +2,89 @@ package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.content.Context
 import android.util.Log
-import androidx.annotation.WorkerThread
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
-/**
- * Installs Kokoro models and registers them in LangDB.
- *
- * The previous build failed with:
- * "No value passed for parameter 'country'/'speakerId'/'speed'/'volume'/'modelType'"
- * so this file passes **all** required named parameters explicitly.
- */
 object KokoroInstaller {
 
     private const val TAG = "KokoroInstaller"
+    private const val ENGINE_NAME = "Kokoro"
 
-    // Example model metadata. Keep/extend as you need. ModelType is whatever your LangDB expects.
-    data class KokoroModel(
-        val displayName: String,   // e.g. "Kokoro 82M (ONNX)"
-        val modelUrl: String,      // full URL to the ONNX model
-        val modelType: String      // e.g. "kokoro-onnx"
+    private data class KokoroModel(
+        val displayName: String,
+        val modelType: String,
+        val onnxFile: String,
+        val voicesJson: String = "vctk.json"
     )
 
-    /**
-     * Public entry to kick off installation+registration.
-     */
-    fun installKokoro(
-        context: Context,
-        model: KokoroModel,
-        language: String = "English",
-        country: String = "US",
-        speakerId: String = "af",   // change default if your app expects different initial speaker
-        speed: Float = 1.0f,
-        volume: Float = 1.0f
-    ) {
-        CoroutineScope(Dispatchers.IO).launch {
+    // Start with 82M to get you compiling and running; expand later if you want more sizes.
+    private val MODELS = listOf(
+        KokoroModel(
+            displayName = "Kokoro 82M v1.0",
+            modelType   = "kokoro-82M",
+            onnxFile    = "kokoro-82M.onnx"
+        )
+    )
+
+    fun installAll(context: Context) {
+        Thread {
             try {
-                val localModelPath = downloadModelIfNeeded(context, model)
-                registerKokoro(
-                    context = context,
-                    language = language,
-                    country = country,
-                    speakerId = speakerId,
-                    speed = speed,
-                    volume = volume,
-                    modelType = model.modelType,
-                    modelName = model.displayName,
-                    modelPath = localModelPath,
-                    modelUrl = model.modelUrl
-                )
-                Log.i(TAG, "Kokoro installed and registered: ${model.displayName}")
+                MODELS.forEach { m ->
+                    val modelDir = File(context.filesDir, "models/$ENGINE_NAME/${m.modelType}")
+                    if (!modelDir.exists()) modelDir.mkdirs()
+
+                    // Download model + voices if missing
+                    downloadIfMissing(
+                        dest = File(modelDir, m.onnxFile),
+                        url  = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/${m.onnxFile}?download=1"
+                    )
+                    downloadIfMissing(
+                        dest = File(modelDir, m.voicesJson),
+                        url  = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/${m.voicesJson}?download=1"
+                    )
+
+                    // EXACT named params your CI complained about:
+                    LangDB.registerKokoro(
+                        context    = context,
+                        language   = "en",
+                        country    = "US",
+                        speakerId  = 0,
+                        speed      = 1.0f,
+                        volume     = 1.0f,
+                        modelType  = m.modelType,
+                        modelDir   = modelDir.absolutePath,
+                        modelFile  = m.onnxFile,
+                        voicesJson = m.voicesJson,
+                        displayName= m.displayName
+                    )
+
+                    Log.i(TAG, "Installed ${m.displayName}")
+                }
             } catch (t: Throwable) {
-                Log.e(TAG, "Failed to install Kokoro: ${model.displayName}", t)
+                Log.e(TAG, "Kokoro install failed", t)
+            }
+        }.start()
+    }
+
+    private fun downloadIfMissing(dest: File, url: String) {
+        if (dest.exists() && dest.length() > 0) return
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 30000
+            readTimeout = 30000
+            requestMethod = "GET"
+        }
+        conn.inputStream.use { input ->
+            FileOutputStream(dest).use { out ->
+                val buf = ByteArray(8 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n <= 0) break
+                    out.write(buf, 0, n)
+                }
             }
         }
-    }
-
-    @WorkerThread
-    private fun downloadModelIfNeeded(context: Context, model: KokoroModel): String {
-        // TODO: Replace this stub with your real downloader that returns a **local absolute path**.
-        // For now, assume your existing downloader puts the file in app files dir under /kokoro/
-        // and returns that full path.
-        // e.g., val path = Downloader.download(context, model.modelUrl, "kokoro/${model.displayName}.onnx")
-        // return path
-        return "file://${context.filesDir.absolutePath}/kokoro/${model.displayName}.onnx"
-    }
-
-    /**
-     * This is the call site that previously failed. It now uses **named args** for everything
-     * your LangDB API requires (as proven by the compiler errors).
-     *
-     * If your LangDB has additional params, add them here with named args.
-     */
-    @WorkerThread
-    private fun registerKokoro(
-        context: Context,
-        language: String,
-        country: String,
-        speakerId: String,
-        speed: Float,
-        volume: Float,
-        modelType: String,
-        modelName: String,
-        modelPath: String,
-        modelUrl: String
-    ) {
-        LangDB.registerKokoro(
-            context = context,
-            language = language,
-            country = country,
-            speakerId = speakerId,
-            speed = speed,
-            volume = volume,
-            modelType = modelType,
-            modelName = modelName,
-            modelPath = modelPath,
-            modelUrl = modelUrl
-        )
+        conn.disconnect()
     }
 }

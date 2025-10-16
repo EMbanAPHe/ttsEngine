@@ -3,68 +3,70 @@ package com.k2fsa.sherpa.onnx.tts.engine
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.ListView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
 import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
+import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB.LanguageEntry
 
 class ManageLanguagesActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityManageLanguagesBinding
+    private lateinit var listImported: ListView
+    private lateinit var emptyView: TextView
+    private lateinit var btnInstallKokoro: Button
 
-    // Must be var (we reassign lists after DB reloads)
-    private var piperModelList: MutableList<String> = mutableListOf()
-    private var coquiModelList: MutableList<String> = mutableListOf()
-    private var importedList: MutableList<LangDB.LanguageEntry> = mutableListOf()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        reloadLists()
-
-        // Piper
-        binding.piperModelsLabel.text = getString(R.string.piper_models)
-        binding.piperModels.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            piperModelList
-        )
-
-        // Coqui
-        binding.coquiModelsLabel.text = getString(R.string.coqui_models)
-        binding.coquiModels.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            coquiModelList
-        )
-
-        // Imported (all engines) — uses our adapter with LanguageEntry
-        binding.importedLabel.visibility = View.VISIBLE
-        binding.imported.adapter = ImportedVoiceAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            importedList
-        )
-
-        binding.deleteImported.setOnClickListener {
-            val pos = binding.imported.checkedItemPosition
-            if (pos >= 0 && pos < importedList.size) {
-                val toDelete = importedList[pos]
-                LangDB.deleteLanguage(this, toDelete)
-                reloadLists()
-                (binding.imported.adapter as ImportedVoiceAdapter).apply {
-                    clear()
-                    addAll(importedList)
-                    notifyDataSetChanged()
-                }
-            }
+    // Provide locals so references compile even if you trimmed resources
+    private val piperModelList: List<String> by lazy {
+        try {
+            resources.getStringArray(R.array.piper_models).toList()
+        } catch (_: Throwable) {
+            emptyList()
         }
     }
 
-    private fun reloadLists() {
-        piperModelList = LangDB.getModelDisplayList(this, engine = "piper").toMutableList()
-        coquiModelList = LangDB.getModelDisplayList(this, engine = "coqui").toMutableList()
-        importedList = LangDB.getAllLanguages(this).toMutableList()
+    private val coquiModelList: List<String> by lazy {
+        try {
+            resources.getStringArray(R.array.coqui_models).toList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    // Imported list we control here
+    private val importedList = mutableListOf<LanguageEntry>()
+    private lateinit var importedAdapter: ImportedVoiceAdapter
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_manage_languages)
+
+        listImported = findViewById(R.id.list_imported)
+        emptyView = findViewById(R.id.empty_view)
+        btnInstallKokoro = findViewById(R.id.button_install_kokoro)
+
+        importedAdapter = ImportedVoiceAdapter(this, importedList)
+        listImported.adapter = importedAdapter
+        listImported.emptyView = emptyView
+
+        // Populate from DB
+        refreshImported()
+
+        btnInstallKokoro.setOnClickListener {
+            // Install a default set; you can expand this to show a chooser dialog
+            Thread {
+                val ok = KokoroInstaller.installDefaultSet(this)
+                runOnUiThread {
+                    if (ok) refreshImported()
+                    // optionally toast result
+                }
+            }.start()
+        }
+    }
+
+    private fun refreshImported() {
+        importedList.clear()
+        importedList.addAll(LangDB.getAllLanguages(this)) // or whatever getter you have
+        importedAdapter.notifyDataSetChanged()
     }
 }

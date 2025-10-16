@@ -3,4 +3,5 @@
     <string name="kokoro_title">Kokoro models</string>
     <string name="kokoro_done">Kokoro installed</string>
     <string name="kokoro_failed">Failed to install Kokoro</string>
+    <string name="app_name">Sherpa TTK</string>
 </resources>

@@ -1,103 +1,87 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
-import androidx.documentfile.provider.DocumentFile
+import androidx.annotation.WorkerThread
 import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import java.io.File
 
 object KokoroInstaller {
 
     private const val TAG = "KokoroInstaller"
 
-    private const val KOKORO_DIR = "kokoro"
-    private const val MODELS_SUBDIR = "onnx"
-    private const val VOICES_SUBDIR = "voices"
-    private const val MODEL_EXT = ".onnx"
-    private const val VOICE_EXT = ".json"
+    // Minimal model descriptor so we can install by type+voice
+    data class KokoroModel(
+        val modelType: String,         // e.g. "82M", "120M", etc.
+        val voice: String,             // voice name, e.g. "af_heart" etc.
+        val modelUrl: String,          // direct .onnx URL
+        val configUrl: String          // direct .json (or metadata) URL if required
+    )
 
-    private const val ENGINE_ID = "kokoro"
-    private const val MODEL_TYPE = "kokoro-onnx"
-
-    suspend fun install(
+    /**
+     * Install a Kokoro model and register it in LangDB.
+     *
+     * NOTE: LangDB.registerKokoro now requires:
+     *   language, country, speakerId, speed, volume, modelType, voice, modelUrl, configUrl
+     */
+    @WorkerThread
+    fun installKokoro(
         context: Context,
-        sourceFolderUri: Uri,
-        language: String,
-        country: String,
-        speakerId: String,
-        speedPrefKey: String = "speed",
-        volumePrefKey: String = "volume",
-    ): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val picked = DocumentFile.fromTreeUri(context, sourceFolderUri)
-            if (picked == null || !picked.isDirectory) {
-                Log.e(TAG, "Invalid Kokoro source folder: $sourceFolderUri")
-                return@withContext false
-            }
-
-            val modelsDir = picked.findFile(MODELS_SUBDIR)
-            val voicesDir = picked.findFile(VOICES_SUBDIR)
-
-            if (modelsDir == null || voicesDir == null) {
-                Log.e(TAG, "Kokoro source must contain /onnx and /voices subfolders")
-                return@withContext false
-            }
-
-            val modelFile = modelsDir.listFiles().firstOrNull { it.name?.endsWith(MODEL_EXT, true) == true }
-            val voiceFile = voicesDir.listFiles().firstOrNull { it.name?.endsWith(VOICE_EXT, true) == true }
-
-            if (modelFile == null || voiceFile == null) {
-                Log.e(TAG, "Missing Kokoro .onnx model or voice .json")
-                return@withContext false
-            }
-
-            val appDir = DocumentFile.fromFile(context.filesDir)
-            val kokoroRoot = appDir.findFile(KOKORO_DIR) ?: appDir.createDirectory(KOKORO_DIR)!!
-            val targetDirName = "${language}_${country}-$speakerId"
-            val targetDir = kokoroRoot.findFile(targetDirName) ?: kokoroRoot.createDirectory(targetDirName)!!
-
-            val targetModel = targetDir.findFile(modelFile.name!!) ?: targetDir.createFile(
-                "application/octet-stream",
-                modelFile.name!!
-            )!!
-            context.contentResolver.openInputStream(modelFile.uri).use { input ->
-                context.contentResolver.openOutputStream(targetModel.uri, "rwt").use { out ->
-                    if (input == null || out == null) throw IllegalStateException("Stream open failed")
-                    input.copyTo(out)
-                }
-            }
-
-            val targetVoice = targetDir.findFile(voiceFile.name!!) ?: targetDir.createFile(
-                "application/json",
-                voiceFile.name!!
-            )!!
-            context.contentResolver.openInputStream(voiceFile.uri).use { input ->
-                context.contentResolver.openOutputStream(targetVoice.uri, "rwt").use { out ->
-                    if (input == null || out == null) throw IllegalStateException("Stream open failed")
-                    input.copyTo(out)
-                }
-            }
-
-            // ⬇️ THIS IS THE PART THE COMPILER IS COMPLAINING ABOUT IN YOUR BUILD
-            LangDB.registerLanguage(
+        model: KokoroModel,
+        // sane defaults so the call site never breaks again
+        language: String = "en",
+        country: String = "US",
+        speakerId: Int = 0,
+        speed: Float = 1.0f,
+        volume: Float = 1.0f,
+    ): Boolean {
+        return try {
+            // If you download to local files first, do it here.
+            // The code below assumes URLs are persisted in DB (same pattern the app uses for piper/coqui).
+            val ok = LangDB.registerKokoro(
                 context = context,
-                engine = ENGINE_ID,
                 language = language,
-                country = country,          // required
-                speakerId = speakerId,      // required
-                speedPrefKey = speedPrefKey,// required (speed)
-                volumePrefKey = volumePrefKey,// required (volume)
-                modelType = MODEL_TYPE,     // required
-                displayName = "${language}_${country} · $speakerId",
-                installDir = targetDir.uri.toString()
+                country = country,
+                speakerId = speakerId,
+                speed = speed,
+                volume = volume,
+                modelType = model.modelType,
+                voice = model.voice,
+                modelUrl = model.modelUrl,
+                configUrl = model.configUrl
             )
-
-            true
-        } catch (e: Throwable) {
-            Log.e(TAG, "Kokoro install failed", e)
+            if (!ok) {
+                Log.e(TAG, "registerKokoro returned false for ${model.modelType}/${model.voice}")
+            }
+            ok
+        } catch (t: Throwable) {
+            Log.e(TAG, "installKokoro failed", t)
             false
         }
+    }
+
+    /**
+     * Example helper to bulk-install a set the UI offers.
+     * Call this from ManageLanguagesActivity when the user taps “Install Kokoro”.
+     */
+    @WorkerThread
+    fun installDefaultSet(context: Context): Boolean {
+        // Fill with whatever variants you’re exposing in UI
+        val wanted = listOf(
+            KokoroModel(
+                modelType = "82M",
+                voice = "af_heart",
+                modelUrl = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/kokoro-en-v1_0.onnx?download=true",
+                configUrl = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/voices.json?download=true"
+            ),
+            // add more here (all sizes/voices you want)
+        )
+
+        var allOk = true
+        for (m in wanted) {
+            val ok = installKokoro(context, m)
+            allOk = allOk && ok
+        }
+        return allOk
     }
 }

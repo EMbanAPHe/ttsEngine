@@ -8,37 +8,19 @@ import com.k2fsa.sherpa.onnx.tts.engine.db.LangDB
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Installs Kokoro voice/model assets into the app's private storage and registers them
- * so the rest of the app can discover/select them like Piper & Coqui.
- */
 object KokoroInstaller {
 
     private const val TAG = "KokoroInstaller"
 
-    // Folder names & file extensions used by Kokoro ONNX packs
     private const val KOKORO_DIR = "kokoro"
     private const val MODELS_SUBDIR = "onnx"
     private const val VOICES_SUBDIR = "voices"
     private const val MODEL_EXT = ".onnx"
     private const val VOICE_EXT = ".json"
 
-    // App’s notion of “engine”/“model type” label for Kokoro (consistent with DB)
     private const val ENGINE_ID = "kokoro"
     private const val MODEL_TYPE = "kokoro-onnx"
 
-    /**
-     * Install one Kokoro package (model + voice) from a SAF URI (folder or zip extracted).
-     * The caller provides language, country, and speakerId that should be shown in UI.
-     *
-     * @param context Android context
-     * @param sourceFolderUri SAF Uri pointing to a folder that contains /onnx and /voices
-     * @param language Two-letter language code (e.g. "en")
-     * @param country  Country/locale code (e.g. "US")
-     * @param speakerId Displayable speaker key/name (e.g. "emma" or "vctk_p225")
-     * @param speedPrefKey  String key for speed preference (reuses app’s existing key)
-     * @param volumePrefKey String key for volume preference (reuses app’s existing key)
-     */
     suspend fun install(
         context: Context,
         sourceFolderUri: Uri,
@@ -55,7 +37,6 @@ object KokoroInstaller {
                 return@withContext false
             }
 
-            // Find /onnx/*.onnx and /voices/*.json
             val modelsDir = picked.findFile(MODELS_SUBDIR)
             val voicesDir = picked.findFile(VOICES_SUBDIR)
 
@@ -72,13 +53,11 @@ object KokoroInstaller {
                 return@withContext false
             }
 
-            // Copy into app storage: /files/kokoro/<language>-<speaker>/{model.onnx, voice.json}
             val appDir = DocumentFile.fromFile(context.filesDir)
             val kokoroRoot = appDir.findFile(KOKORO_DIR) ?: appDir.createDirectory(KOKORO_DIR)!!
             val targetDirName = "${language}_${country}-$speakerId"
             val targetDir = kokoroRoot.findFile(targetDirName) ?: kokoroRoot.createDirectory(targetDirName)!!
 
-            // Copy model
             val targetModel = targetDir.findFile(modelFile.name!!) ?: targetDir.createFile(
                 "application/octet-stream",
                 modelFile.name!!
@@ -90,7 +69,6 @@ object KokoroInstaller {
                 }
             }
 
-            // Copy voice
             val targetVoice = targetDir.findFile(voiceFile.name!!) ?: targetDir.createFile(
                 "application/json",
                 voiceFile.name!!
@@ -102,20 +80,17 @@ object KokoroInstaller {
                 }
             }
 
-            // Register in LangDB so UI can list/select this voice like Piper/Coqui
-            // NOTE: The signature below matches the current DB helper (requires country, speakerId, speed, volume, and modelType).
+            // ⬇️ THIS IS THE PART THE COMPILER IS COMPLAINING ABOUT IN YOUR BUILD
             LangDB.registerLanguage(
                 context = context,
                 engine = ENGINE_ID,
                 language = language,
-                country = country,
-                speakerId = speakerId,
-                speedPrefKey = speedPrefKey,
-                volumePrefKey = volumePrefKey,
-                modelType = MODEL_TYPE,
-                // Optional display label shown in pickers: "<language>-<country> · <speaker>"
+                country = country,          // required
+                speakerId = speakerId,      // required
+                speedPrefKey = speedPrefKey,// required (speed)
+                volumePrefKey = volumePrefKey,// required (volume)
+                modelType = MODEL_TYPE,     // required
                 displayName = "${language}_${country} · $speakerId",
-                // Optional: absolute directory the assets were copied to (for deletions)
                 installDir = targetDir.uri.toString()
             )
 

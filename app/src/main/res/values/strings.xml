@@ -1,54 +1,38 @@
 <resources>
-
-    <!-- Existing app ids -->
+    <!-- App -->
     <string name="app_name">SherpaTTS</string>
 
-    <!-- IDs your Kotlin referenced but AAPT removed due to missing defaults -->
-    <string name="input">Input</string>
-    <string name="language_id">Language ID</string>
+    <!-- Main UI -->
+    <string name="start_main">Start</string>
+    <string name="input">Text</string>
+    <string name="play">Play</string>
+    <string name="stop">Stop</string>
+    <string name="volume">Volume</string>
+    <string name="speed">Speed</string>
+    <string name="apply_system_speed">Use system speech rate</string>
+    <string name="speaker_id">Speaker</string>
+    <string name="language_id">Language</string>
     <string name="one_model_per_language">One model per language</string>
+
+    <!-- Manage Languages -->
+    <string name="test_languages">Manage languages</string>
+    <string name="download_language">Download</string>
+    <string name="delete_language">Delete</string>
+    <string name="add_language">Add</string>
+
+    <!-- Catalog headers from the original -->
     <string name="piper_models">Piper models</string>
     <string name="coqui_models">Coqui models</string>
-    <string name="play">Play</string>
-    <string name="speaker_id">Speaker ID</string>
-    <string name="speed">Speed</string>
-    <string name="start_main">Start</string>
-    <string name="stop">Stop</string>
-    <string name="test_languages">Test languages</string>
-    <string name="volume">Volume</string>
 
-    <!-- The dialog strings AAPT warned about -->
-    <string name="dialog_Later_button">Later</string>
-    <string name="dialog_StarOnGitHub">Star on GitHub</string>
-
-    <!-- Download strings AAPT warned about -->
-    <string name="download_language">Download language</string>
-    <string name="error_download">Download failed</string>
-
-    <!-- Kokoro-specific labels -->
-    <string name="kokoro">Kokoro</string>
-    <string name="kokoro_install">Install Kokoro</string>
-    <string name="kokoro_installing">Installing Kokoro…</string>
+    <!-- Kokoro -->
     <string name="kokoro_models">Kokoro models</string>
+    <string name="kokoro_installing">Installing %1$s…</string>
+    <string name="kokoro_installed">%1$s installed</string>
 
-    <!-- Required by code; must exist in default values/ -->
-    <string name="coqui_models">Coqui models</string>
-    <string name="dialog_Later_button">Later</string>
+    <!-- Dialog / misc -->
     <string name="dialog_StarOnGitHub">Star on GitHub</string>
-    <string name="download_language">Download language</string>
-    <string name="error_download">Download failed</string>
+    <string name="dialog_Later_button">Later</string>
 
-    <!-- If not already present but referenced anywhere: -->
-    <string name="piper_models">Piper models</string>
-    <string name="one_model_per_language">One model per language</string>
-    <string name="speaker_id">Speaker ID</string>
-    <string name="speed">Speed</string>
-    <string name="volume">Volume</string>
-    <string name="input">Input</string>
-    <string name="start_main">Start</string>
-    <string name="stop">Stop</string>
-    <string name="test_languages">Test languages</string>
-    <string name="language_id">Language ID</string>
-    <string name="play">Play</string>
-
+    <!-- Errors -->
+    <string name="error_download">Download failed: %1$s</string>
 </resources>

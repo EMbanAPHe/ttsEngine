@@ -1,53 +1,88 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.view.View
 import android.widget.ArrayAdapter
-import com.k2fsa.sherpa.onnx.tts.engine.databinding.ActivityManageLanguagesBinding
+import android.widget.Button
+import android.widget.ListView
+import android.widget.ProgressBar
+import androidx.appcompat.app.AppCompatActivity
 
-/**
- * Refactored to use ViewBinding everywhere.
- * Removed bare references like `piperModelList`, `coquiModelList`, `importedList`.
- * Use `binding.piperModelList` etc. so the compiler finds the views.
- */
 class ManageLanguagesActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityManageLanguagesBinding
-
-    private lateinit var piperAdapter: ArrayAdapter<String>
-    private lateinit var coquiAdapter: ArrayAdapter<String>
-    private lateinit var importedAdapter: ImportedVoiceAdapter
+    private lateinit var piperList: ListView
+    private lateinit var coquiList: ListView
+    private lateinit var importedList: ListView
+    private var installKokoroBtn: Button? = null
+    private var kokoroProgress: ProgressBar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityManageLanguagesBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_manage_languages)
 
-        // Piper built-in list
-        val piperItems = LangDB.getBuiltinPiperDisplayList(this)
-        piperAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, piperItems)
-        binding.piperModelList.adapter = piperAdapter
+        // These IDs match the original master layout
+        piperList     = findViewById(R.id.piperModelList)
+        coquiList     = findViewById(R.id.coquiModelList)
+        importedList  = findViewById(R.id.importedList)
+        // Optional controls if you added them to the layout:
+        installKokoroBtn = findViewById(R.id.buttonInstallKokoro)
+        kokoroProgress   = findViewById(R.id.progressKokoro)
 
-        // Coqui built-in list
-        val coquiItems = LangDB.getBuiltinCoquiDisplayList(this)
-        coquiAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, coquiItems)
-        binding.coquiModelList.adapter = coquiAdapter
-
-        // Imported (user) voices
-        val imported = LangDB.getImportedVoices(this)  // returns List<LangDB.LanguageEntry>
-        importedAdapter = ImportedVoiceAdapter(this, imported)
-        binding.importedList.adapter = importedAdapter
-
-        // Optional: item clicks
-        binding.piperModelList.setOnItemClickListener { _, _, position, _ ->
-            LangDB.installBuiltinPiperByIndex(this, position)
+        // Piper list
+        piperList.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_1,
+            LangDB.getPiperDisplayList(this)
+        )
+        piperList.setOnItemClickListener { _, _, position, _ ->
+            LangDB.getPiperEntryAt(this, position)?.let { LangDB.toggleInstalled(this, it) }
+            refresh()
         }
-        binding.coquiModelList.setOnItemClickListener { _, _, position, _ ->
-            LangDB.installBuiltinCoquiByIndex(this, position)
+
+        // Coqui list
+        coquiList.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_1,
+            LangDB.getCoquiDisplayList(this)
+        )
+        coquiList.setOnItemClickListener { _, _, position, _ ->
+            LangDB.getCoquiEntryAt(this, position)?.let { LangDB.toggleInstalled(this, it) }
+            refresh()
         }
-        binding.importedList.setOnItemClickListener { _, _, position, _ ->
-            val entry = importedAdapter.getItem(position)
-            if (entry != null) LangDB.selectLanguage(this, entry.languageId)
+
+        // Imported languages list
+        importedList.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_1,
+            LangDB.getImportedDisplayList(this)
+        )
+        importedList.setOnItemClickListener { _, _, position, _ ->
+            LangDB.getImportedEntryAt(this, position)?.let { LangDB.toggleInstalled(this, it) }
+            refresh()
+        }
+
+        // Install Kokoro on demand
+        installKokoroBtn?.setOnClickListener {
+            installKokoroBtn?.isEnabled = false
+            kokoroProgress?.visibility = View.VISIBLE
+            KokoroInstaller.installAll(this@ManageLanguagesActivity)
+            it.postDelayed({
+                kokoroProgress?.visibility = View.GONE
+                installKokoroBtn?.isEnabled = true
+                refresh()
+            }, 1500)
+        }
+    }
+
+    private fun refresh() {
+        (piperList.adapter as? ArrayAdapter<String>)?.let {
+            it.clear(); it.addAll(LangDB.getPiperDisplayList(this)); it.notifyDataSetChanged()
+        }
+        (coquiList.adapter as? ArrayAdapter<String>)?.let {
+            it.clear(); it.addAll(LangDB.getCoquiDisplayList(this)); it.notifyDataSetChanged()
+        }
+        (importedList.adapter as? ArrayAdapter<String>)?.let {
+            it.clear(); it.addAll(LangDB.getImportedDisplayList(this)); it.notifyDataSetChanged()
         }
     }
 }

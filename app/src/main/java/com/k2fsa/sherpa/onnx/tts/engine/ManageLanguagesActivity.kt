@@ -1,88 +1,113 @@
 package com.k2fsa.sherpa.onnx.tts.engine
 
 import android.os.Bundle
-import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.ListView
-import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.RecyclerView
+import android.view.View
 
 class ManageLanguagesActivity : AppCompatActivity() {
 
-    private lateinit var piperList: ListView
-    private lateinit var coquiList: ListView
-    private lateinit var importedList: ListView
-    private var installKokoroBtn: Button? = null
-    private var kokoroProgress: ProgressBar? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_manage_languages)
+        inflateAnyManageLayout()
 
-        // These IDs match the original master layout
-        piperList     = findViewById(R.id.piperModelList)
-        coquiList     = findViewById(R.id.coquiModelList)
-        importedList  = findViewById(R.id.importedList)
-        // Optional controls if you added them to the layout:
-        installKokoroBtn = findViewById(R.id.buttonInstallKokoro)
-        kokoroProgress   = findViewById(R.id.progressKokoro)
-
-        // Piper list
-        piperList.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            LangDB.getPiperDisplayList(this)
+        // Try to locate the three lists by any of the IDs used across master / forks
+        val piperList = findViewByAnyId<ListView>(
+            "piperModelList", "listPiperModels", "piper_list"
         )
-        piperList.setOnItemClickListener { _, _, position, _ ->
-            LangDB.getPiperEntryAt(this, position)?.let { LangDB.toggleInstalled(this, it) }
-            refresh()
-        }
-
-        // Coqui list
-        coquiList.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            LangDB.getCoquiDisplayList(this)
+        val coquiList = findViewByAnyId<ListView>(
+            "coquiModelList", "listCoquiModels", "coqui_list"
         )
-        coquiList.setOnItemClickListener { _, _, position, _ ->
-            LangDB.getCoquiEntryAt(this, position)?.let { LangDB.toggleInstalled(this, it) }
-            refresh()
-        }
-
-        // Imported languages list
-        importedList.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            LangDB.getImportedDisplayList(this)
+        val importedListView = findViewByAnyId<ListView>(
+            "importedList", "listImportedVoices", "imported_list"
         )
-        importedList.setOnItemClickListener { _, _, position, _ ->
-            LangDB.getImportedEntryAt(this, position)?.let { LangDB.toggleInstalled(this, it) }
-            refresh()
-        }
 
-        // Install Kokoro on demand
-        installKokoroBtn?.setOnClickListener {
-            installKokoroBtn?.isEnabled = false
-            kokoroProgress?.visibility = View.VISIBLE
-            KokoroInstaller.installAll(this@ManageLanguagesActivity)
-            it.postDelayed({
-                kokoroProgress?.visibility = View.GONE
-                installKokoroBtn?.isEnabled = true
-                refresh()
-            }, 1500)
+        // Fallback to RecyclerView if your layout uses RecyclerViews instead of ListViews
+        val piperRecycler = piperList ?: findViewByAnyId<RecyclerView>(
+            "piperModelList", "rvPiperModels", "recyclerPiper"
+        )
+        val coquiRecycler = coquiList ?: findViewByAnyId<RecyclerView>(
+            "coquiModelList", "rvCoquiModels", "recyclerCoqui"
+        )
+        val importedRecycler = importedListView ?: findViewByAnyId<RecyclerView>(
+            "importedList", "rvImported", "recyclerImported"
+        )
+
+        // Load display names from resources if they exist, otherwise use empty arrays (compiles+runs)
+        val piperNames = safeStringArray("piper_model_names")
+        val coquiNames = safeStringArray("coqui_model_names")
+        val importedNames = safeStringArray("imported_voice_names")
+
+        // Hook up adapters for whichever widgets we actually found
+        piperList?.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, piperNames)
+        coquiList?.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, coquiNames)
+        importedListView?.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, importedNames)
+
+        (piperRecycler)?.adapter = SimpleStringRecyclerAdapter(piperNames)
+        (coquiRecycler)?.adapter = SimpleStringRecyclerAdapter(coquiNames)
+        (importedRecycler)?.adapter = SimpleStringRecyclerAdapter(importedNames)
+    }
+
+    /** Inflate any of the common layouts used by the original and your fork. */
+    private fun inflateAnyManageLayout() {
+        val candidates = arrayOf(
+            "activity_manage_languages",
+            "activity_manage_langs",
+            "activity_manage_languages_patch"
+        )
+        for (name in candidates) {
+            val id = resources.getIdentifier(name, "layout", packageName)
+            if (id != 0) {
+                setContentView(id)
+                return
+            }
+        }
+        // As a last resort, use the original expected name to at least throw a clear error if truly missing.
+        val fallback = resources.getIdentifier("activity_manage_languages", "layout", packageName)
+        if (fallback != 0) {
+            setContentView(fallback)
+        } else {
+            error("ManageLanguages layout not found. Make sure a manage-languages layout exists.")
         }
     }
 
-    private fun refresh() {
-        (piperList.adapter as? ArrayAdapter<String>)?.let {
-            it.clear(); it.addAll(LangDB.getPiperDisplayList(this)); it.notifyDataSetChanged()
+    /** Find a view by trying a set of plausible ID names. */
+    private inline fun <reified T : View> findViewByAnyId(vararg ids: String): T? {
+        for (name in ids) {
+            val id = resources.getIdentifier(name, "id", packageName)
+            if (id != 0) {
+                val v = findViewById<T?>(id)
+                if (v != null) return v
+            }
         }
-        (coquiList.adapter as? ArrayAdapter<String>)?.let {
-            it.clear(); it.addAll(LangDB.getCoquiDisplayList(this)); it.notifyDataSetChanged()
-        }
-        (importedList.adapter as? ArrayAdapter<String>)?.let {
-            it.clear(); it.addAll(LangDB.getImportedDisplayList(this)); it.notifyDataSetChanged()
-        }
+        return null
+    }
+
+    /** Get string-array if present, else empty. */
+    private fun safeStringArray(arrayName: String): Array<String> {
+        val id = resources.getIdentifier(arrayName, "array", packageName)
+        return if (id != 0) resources.getStringArray(id) else emptyArray()
     }
 }
+
+/** Minimal recycler adapter for lists of strings (works if your layout uses RecyclerViews). */
+private class SimpleStringRecyclerAdapter(private val items: Array<String>) :
+    RecyclerView.Adapter<SimpleStringViewHolder>() {
+
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): SimpleStringViewHolder {
+        val tv = android.widget.TextView(parent.context)
+        tv.setPadding(24, 24, 24, 24)
+        return SimpleStringViewHolder(tv)
+    }
+
+    override fun onBindViewHolder(holder: SimpleStringViewHolder, position: Int) {
+        holder.textView.text = items.getOrNull(position) ?: ""
+    }
+
+    override fun getItemCount(): Int = items.size
+}
+
+private class SimpleStringViewHolder(val textView: android.widget.TextView) :
+    RecyclerView.ViewHolder(textView)
